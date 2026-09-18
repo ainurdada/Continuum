@@ -1,0 +1,18 @@
+{
+    "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+    "C_Cpp.codeAnalysis.runAutomatically": true,
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "C_Cpp.default.cppStandard": "c++23",
+    "C_Cpp.codeAnalysis.exclude": {
+        "**/third_party/**": true,
+        "**/build/**": true
+    },
+    "cmake.buildBeforeRun": true,
+    "cmake.debugConfig": {
+        "MIMode": "lldb",
+        "args": [
+            "${workspaceFolder}/projects/demo/ContinuumDemo.continuum"
+        ],
+        "cwd": "${workspaceFolder}"
+    }
+}
