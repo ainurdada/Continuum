@@ -1,6 +1,6 @@
 add_library(
     ContinuumEngine_Ecs
-    OBJECT
+    STATIC
 
     private/archetype.cpp
     private/command_buffer.cpp
@@ -15,6 +15,20 @@ add_library(
 target_include_directories(
     ContinuumEngine_Ecs
     PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>
+)
+
+target_include_directories(
+    ContinuumEngine_Ecs
+    PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/public>
+)
+
+
+target_link_libraries(
+    ContinuumEngine
+    INTERFACE
+    ContinuumEngine_Ecs
 )

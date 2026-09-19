@@ -4,7 +4,7 @@
 #include <vector>
 
 #include <ecs/ecs.h>
-#include <component_binding_registry.h>
+#include "component_binding_registry.h"
 
 namespace engine::ecs_reflection {
 

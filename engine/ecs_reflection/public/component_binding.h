@@ -7,7 +7,7 @@
 #include <typeindex>
 
 #include <ecs/ecs.h>
-#include <object_view.h>
+#include <reflection/public/object_view.h>
 #include <reflection/public/type_descriptor.h>
 
 namespace engine::ecs_reflection { 

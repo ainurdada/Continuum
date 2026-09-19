@@ -9,6 +9,13 @@ add_library(
 target_include_directories(
     ContinuumEngine_ReflectionJson
     PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>
+)
+
+target_include_directories(
+    ContinuumEngine_ReflectionJson
+    PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/public>
 )
@@ -18,4 +25,11 @@ target_link_libraries(
     PUBLIC
     ContinuumEngine_Reflection
     nlohmann_json::nlohmann_json
+)
+
+
+target_link_libraries(
+    ContinuumEngine
+    INTERFACE
+    ContinuumEngine_ReflectionJson
 )

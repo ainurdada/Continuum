@@ -4,9 +4,8 @@
 #include <optional>
 #include <unordered_map>
 
-#include <component_signature.h>
-#include <entity.h>
-
+#include "component_signature.h"
+#include "entity.h"
 
 namespace engine::ecs {
 
@@ -52,4 +51,4 @@ struct ArchetypeRegistry {
     std::vector<ArchetypeID> filter(const QueryFilter& filter) const;
 };
 
-}
+} // namespace engine::ecs

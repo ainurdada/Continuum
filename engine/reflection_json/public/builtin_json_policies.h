@@ -5,7 +5,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include <json_serialization_registry.h>
+#include "json_serialization_registry.h"
 
 namespace engine::reflection::serialization {
 

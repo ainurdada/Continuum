@@ -7,7 +7,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include <object_view.h>
+#include <reflection/public/object_view.h>
 
 namespace engine::reflection::serialization {
 

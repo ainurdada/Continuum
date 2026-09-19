@@ -1,10 +1,10 @@
 #pragma once
 
-#include <vector>
 #include <memory>
+#include <vector>
 
-#include <system.h>
-#include <command_buffer.h>
+#include "command_buffer.h"
+#include "system.h"
 
 namespace engine::ecs {
 
@@ -60,4 +60,4 @@ class WorldExecution {
     void destroy();
 };
 
-}
+} // namespace engine::ecs

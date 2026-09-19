@@ -6,7 +6,7 @@
 #include <string_view>
 #include <type_traits>
 
-#include <type_access_fwd.h>
+#include "type_access_fwd.h"
 
 namespace engine::reflection::modifiers {
 

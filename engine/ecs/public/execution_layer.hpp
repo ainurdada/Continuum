@@ -1,7 +1,7 @@
 #pragma once
 
 #ifndef ECS_H_INCLUDED
-#include <ecs.h>
+#include "ecs/ecs.h"
 #endif
 
 namespace engine::ecs {
@@ -26,4 +26,4 @@ template <typename T> void ExecutionLayer::execute(T&& systemFunction) {
     _commandBuffer.clear();
 }
 
-}
+} // namespace engine::ecs

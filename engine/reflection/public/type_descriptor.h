@@ -6,7 +6,7 @@
 #include <type_traits>
 #include <typeindex>
 
-#include <modifiers.h>
+#include "modifiers.h"
 
 namespace engine::reflection {
 

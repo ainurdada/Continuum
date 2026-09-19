@@ -7,8 +7,8 @@
 #include <utility>
 #include <vector>
 
-#include <component_signature.h>
-#include <entity.h>
+#include "component_signature.h"
+#include "entity.h"
 
 namespace engine::ecs {
 

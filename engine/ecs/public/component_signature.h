@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <vector>
 
-
 namespace engine::ecs {
 
 using ComponentID = std::uint32_t;
@@ -29,4 +28,4 @@ struct ComponentSignatureHash {
     std::size_t operator()(const ComponentSignature& signature) const noexcept;
 };
 
-}
+} // namespace engine::ecs

@@ -1,7 +1,7 @@
 #pragma once
 
 #ifndef ECS_H_INCLUDED
-#include "ecs.h"
+#include "ecs/ecs.h"
 #endif
 
 namespace engine::ecs {
@@ -27,4 +27,4 @@ template <typename T> inline void Commands::add(Entity entity, T component) {
     }
 }
 
-}
+} // namespace engine::ecs

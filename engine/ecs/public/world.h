@@ -3,10 +3,10 @@
 #include <cstddef>
 #include <typeindex>
 
-#include <archetype.h>
-#include <query.h>
-#include <execution_layer.h>
-#include <stash.h>
+#include "archetype.h"
+#include "execution_layer.h"
+#include "query.h"
+#include "stash.h"
 
 namespace engine::ecs {
 
@@ -113,4 +113,4 @@ class World {
     SystemGroup& createSystemGroup();
 };
 
-}
+} // namespace engine::ecs

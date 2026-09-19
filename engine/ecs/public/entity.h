@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 
 namespace engine::ecs {
 
@@ -20,5 +20,4 @@ struct EntityHash {
     std::size_t operator()(const Entity& entity) const noexcept;
 };
 
-
-}
+} // namespace engine::ecs

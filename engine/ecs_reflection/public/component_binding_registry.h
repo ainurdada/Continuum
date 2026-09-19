@@ -3,7 +3,7 @@
 #include <typeindex>
 #include <unordered_map>
 
-#include <component_binding.h>
+#include "component_binding.h"
 
 namespace engine::ecs_reflection {
 

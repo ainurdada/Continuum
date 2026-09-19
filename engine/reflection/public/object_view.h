@@ -5,8 +5,8 @@
 #include <optional>
 #include <type_traits>
 
-#include <type_descriptor.h>
-#include <type_registry.h>
+#include "type_descriptor.h"
+#include "type_registry.h"
 
 namespace engine::reflection {
 

@@ -2,8 +2,8 @@
 
 #include <cstdint>
 
-#include <component_signature.h>
-#include <archetype.h>
+#include "archetype.h"
+#include "component_signature.h"
 
 namespace engine::ecs {
 
@@ -126,4 +126,4 @@ class QueryBuilder {
     Query build();
 };
 
-}
+} // namespace engine::ecs

@@ -6,7 +6,7 @@
 #include <vector>
 #include <unordered_set>
 
-#include <type_descriptor.h>
+#include "type_descriptor.h"
 
 namespace engine::reflection {
 

@@ -5,8 +5,8 @@
 
 #include <nlohmann/json.hpp>
 
-#include <json_serialization_registry.h>
-#include <object_view.h>
+#include "json_serialization_registry.h"
+#include <reflection/public/object_view.h>
 
 namespace engine::reflection::serialization {
 
