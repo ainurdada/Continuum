@@ -1,5 +1,13 @@
 include(FetchContent)
 
+
+FetchContent_Declare(
+    glm
+    URL "https://github.com/g-truc/glm/archive/refs/tags/1.0.3.tar.gz"
+    URL_HASH "SHA256=6775e47231a446fd086d660ecc18bcd076531cfedd912fbd66e576b118607001"
+    EXCLUDE_FROM_ALL
+)
+
 FetchContent_Declare(
     json
     URL "https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz"
@@ -8,5 +16,6 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(
+    glm
     json
 )
