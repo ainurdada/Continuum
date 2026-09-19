@@ -4,3 +4,4 @@ add_library(
 )
 
 add_subdirectory(ecs)
+add_subdirectory(reflection)
