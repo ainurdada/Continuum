@@ -6,3 +6,4 @@ add_library(
 add_subdirectory(ecs)
 add_subdirectory(reflection)
 add_subdirectory(reflection_json)
+add_subdirectory(ecs_reflection)
