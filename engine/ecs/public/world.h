@@ -3,10 +3,10 @@
 #include <cstddef>
 #include <typeindex>
 
-#include <public/archetype.h>
-#include <public/query.h>
-#include <public/execution_layer.h>
-#include "public/stash.h"
+#include <archetype.h>
+#include <query.h>
+#include <execution_layer.h>
+#include <stash.h>
 
 namespace engine::ecs {
 

@@ -4,8 +4,8 @@
 #include <optional>
 #include <unordered_map>
 
-#include <public/component_signature.h>
-#include <public/entity.h>
+#include <component_signature.h>
+#include <entity.h>
 
 
 namespace engine::ecs {

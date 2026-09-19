@@ -1,8 +1,8 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <public/archetype.h>
-#include <public/query.h>
+#include <archetype.h>
+#include <query.h>
 
 namespace engine::ecs {
 ArchetypeID Archetype::id() const noexcept {

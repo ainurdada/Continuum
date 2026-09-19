@@ -1,6 +1,6 @@
-#include <public/command_buffer.h>
+#include <command_buffer.h>
 
-#include <public/world.h>
+#include <world.h>
 
 namespace engine::ecs {
 

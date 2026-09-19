@@ -1,4 +1,4 @@
-#include <public/entity.h>
+#include <entity.h>
 
 #include <utility>
 

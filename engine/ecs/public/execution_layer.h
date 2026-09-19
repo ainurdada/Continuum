@@ -3,8 +3,8 @@
 #include <vector>
 #include <memory>
 
-#include <public/system.h>
-#include <public/command_buffer.h>
+#include <system.h>
+#include <command_buffer.h>
 
 namespace engine::ecs {
 

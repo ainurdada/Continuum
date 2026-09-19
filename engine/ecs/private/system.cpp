@@ -1,4 +1,4 @@
-#include <public/system.h>
+#include <system.h>
 
 namespace engine::ecs {
 

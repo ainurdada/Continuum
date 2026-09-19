@@ -1,4 +1,4 @@
-#include <public/world.h>
+#include <world.h>
 
 #include <cassert>
 #include <limits>

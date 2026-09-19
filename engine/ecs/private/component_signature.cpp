@@ -1,4 +1,4 @@
-#include <public/component_signature.h>
+#include <component_signature.h>
 
 #include <algorithm>
 #include <functional>

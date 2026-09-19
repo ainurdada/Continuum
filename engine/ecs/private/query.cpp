@@ -1,11 +1,11 @@
-#include <public/query.h>
+#include <query.h>
 
 #include <algorithm>
 #include <cassert>
 #include <limits>
 #include <stdexcept>
 
-#include <public/world.h>
+#include <world.h>
 
 namespace engine::ecs {
 

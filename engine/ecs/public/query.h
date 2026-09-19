@@ -2,8 +2,8 @@
 
 #include <cstdint>
 
-#include <public/component_signature.h>
-#include <public/archetype.h>
+#include <component_signature.h>
+#include <archetype.h>
 
 namespace engine::ecs {
 

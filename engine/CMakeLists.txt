@@ -3,5 +3,4 @@ add_library(
     INTERFACE
 )
 
-
 add_subdirectory(ecs)
