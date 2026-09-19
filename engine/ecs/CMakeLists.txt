@@ -14,8 +14,7 @@ add_library(
 
 target_include_directories(
     ContinuumEngine_Ecs
-    
-    PRIVATE
+    PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/public>
 )
