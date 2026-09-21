@@ -1,6 +1,6 @@
 #include <entity.h>
 
-#include <utility>
+#include <functional>
 
 namespace engine::ecs {
 
