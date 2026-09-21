@@ -12,23 +12,4 @@ add_library(
     private/world.cpp
 )
 
-target_include_directories(
-    ContinuumEngine_Ecs
-    PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>
-)
-
-target_include_directories(
-    ContinuumEngine_Ecs
-    PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/public>
-)
-
-
-target_link_libraries(
-    ContinuumEngine
-    INTERFACE
-    ContinuumEngine_Ecs
-)
+set_module_defaults(ContinuumEngine_Ecs STATIC)

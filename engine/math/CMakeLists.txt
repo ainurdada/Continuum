@@ -5,29 +5,10 @@ add_library(
     private/g_math.cpp
 )
 
-target_include_directories(
-    ContinuumEngine_Math
-    PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>
-)
-
-target_include_directories(
-    ContinuumEngine_Math
-    PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/public>
-)
+set_module_defaults(ContinuumEngine_Math STATIC)
 
 target_link_libraries(
     ContinuumEngine_Math
     PUBLIC
     glm::glm
-)
-
-
-target_link_libraries(
-    ContinuumEngine
-    INTERFACE
-    ContinuumEngine_Math
 )
