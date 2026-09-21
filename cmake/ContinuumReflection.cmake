@@ -20,6 +20,7 @@ function(continuum_enable_reflection targetName)
     set(reflectionInputPath "${CMAKE_CURRENT_BINARY_DIR}/${REFLECTION_MODULE}.reflection_input.cpp")
 
     file(CONFIGURE OUTPUT "${reflectionInputPath}" CONTENT "")
+    set_source_files_properties("${reflectionInputPath}" PROPERTIES CXX_SCAN_FOR_MODULES OFF)
 
     target_sources(${targetName} PRIVATE "${reflectionInputPath}")
 
