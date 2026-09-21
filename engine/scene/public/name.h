@@ -6,9 +6,9 @@
 
 namespace engine::scene {
 
-OBJECT(Component, Key("continuum.scene.name"))
+OBJECT(Component)
 struct Name {
-    FIELD(ShowInInspector, Key("name"))
+    FIELD(ShowInInspector)
     std::string value{};
 };
 

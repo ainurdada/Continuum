@@ -2,15 +2,15 @@
     "entities": [
         {
             "components": {
-                "continuum.scene.camera": {
+                "engine::scene::Camera": {
                     "farPlane": 100.0,
                     "nearPlane": 0.10000000149011612,
                     "verticalFov": 1.0471975803375244
                 },
-                "continuum.scene.name": {
-                    "name": "camera"
+                "engine::scene::Name": {
+                    "value": "camera"
                 },
-                "continuum.scene.transform": {
+                "engine::scene::Transform": {
                     "position": [
                         0.0,
                         0.0,
@@ -32,13 +32,13 @@
         },
         {
             "components": {
-                "continuum.scene.meshRenderer": {
+                "engine::scene::MeshRenderer": {
                     "geometry": "cube"
                 },
-                "continuum.scene.name": {
-                    "name": "cube1"
+                "engine::scene::Name": {
+                    "value": "cube1"
                 },
-                "continuum.scene.transform": {
+                "engine::scene::Transform": {
                     "position": [
                         2.5,
                         1.0,
@@ -60,16 +60,16 @@
         },
         {
             "components": {
-                "continuum.scene.meshRenderer": {
+                "engine::scene::MeshRenderer": {
                     "geometry": "cube"
                 },
-                "continuum.scene.name": {
-                    "name": "cube2"
+                "engine::scene::Name": {
+                    "value": "cube2"
                 },
-                "continuum.scene.parent": {
+                "engine::scene::Parent": {
                     "parent": 2
                 },
-                "continuum.scene.transform": {
+                "engine::scene::Transform": {
                     "position": [
                         -5.0,
                         0.0,
@@ -91,13 +91,13 @@
         },
         {
             "components": {
-                "continuum.scene.meshRenderer": {
+                "engine::scene::MeshRenderer": {
                     "geometry": "cube"
                 },
-                "continuum.scene.name": {
-                    "name": "floor"
+                "engine::scene::Name": {
+                    "value": "floor"
                 },
-                "continuum.scene.transform": {
+                "engine::scene::Transform": {
                     "position": [
                         0.0,
                         0.0,
@@ -119,13 +119,13 @@
         },
         {
             "components": {
-                "continuum.scene.meshRenderer": {
+                "engine::scene::MeshRenderer": {
                     "geometry": "cube"
                 },
-                "continuum.scene.name": {
-                    "name": "back wall"
+                "engine::scene::Name": {
+                    "value": "back wall"
                 },
-                "continuum.scene.transform": {
+                "engine::scene::Transform": {
                     "position": [
                         0.0,
                         1.600000023841858,
@@ -147,13 +147,13 @@
         },
         {
             "components": {
-                "continuum.scene.meshRenderer": {
+                "engine::scene::MeshRenderer": {
                     "geometry": "cube"
                 },
-                "continuum.scene.name": {
-                    "name": "left wall"
+                "engine::scene::Name": {
+                    "value": "left wall"
                 },
-                "continuum.scene.transform": {
+                "engine::scene::Transform": {
                     "position": [
                         -5.0,
                         1.600000023841858,
@@ -175,13 +175,13 @@
         },
         {
             "components": {
-                "continuum.scene.meshRenderer": {
+                "engine::scene::MeshRenderer": {
                     "geometry": "cube"
                 },
-                "continuum.scene.name": {
-                    "name": "right wall"
+                "engine::scene::Name": {
+                    "value": "right wall"
                 },
-                "continuum.scene.transform": {
+                "engine::scene::Transform": {
                     "position": [
                         5.0,
                         1.600000023841858,
