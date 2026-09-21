@@ -17,3 +17,5 @@ include(cmake/ContinuumReflection.cmake)
 
 add_subdirectory(engine)
 add_subdirectory(tools/reflection_generator)
+
+add_subdirectory(projects/demo)

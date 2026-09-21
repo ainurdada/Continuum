@@ -1,0 +1,206 @@
+{
+    "entities": [
+        {
+            "components": {
+                "continuum.scene.camera": {
+                    "farPlane": 100.0,
+                    "nearPlane": 0.10000000149011612,
+                    "verticalFov": 1.0471975803375244
+                },
+                "continuum.scene.name": {
+                    "name": "camera"
+                },
+                "continuum.scene.transform": {
+                    "position": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                }
+            },
+            "id": 1
+        },
+        {
+            "components": {
+                "continuum.scene.meshRenderer": {
+                    "geometry": "cube"
+                },
+                "continuum.scene.name": {
+                    "name": "cube1"
+                },
+                "continuum.scene.transform": {
+                    "position": [
+                        2.5,
+                        1.0,
+                        1.5
+                    ],
+                    "rotation": [
+                        0.0,
+                        -0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                }
+            },
+            "id": 2
+        },
+        {
+            "components": {
+                "continuum.scene.meshRenderer": {
+                    "geometry": "cube"
+                },
+                "continuum.scene.name": {
+                    "name": "cube2"
+                },
+                "continuum.scene.parent": {
+                    "parent": 2
+                },
+                "continuum.scene.transform": {
+                    "position": [
+                        -5.0,
+                        0.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                }
+            },
+            "id": 3
+        },
+        {
+            "components": {
+                "continuum.scene.meshRenderer": {
+                    "geometry": "cube"
+                },
+                "continuum.scene.name": {
+                    "name": "floor"
+                },
+                "continuum.scene.transform": {
+                    "position": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        10.0,
+                        0.20000000298023224,
+                        10.0
+                    ]
+                }
+            },
+            "id": 4
+        },
+        {
+            "components": {
+                "continuum.scene.meshRenderer": {
+                    "geometry": "cube"
+                },
+                "continuum.scene.name": {
+                    "name": "back wall"
+                },
+                "continuum.scene.transform": {
+                    "position": [
+                        0.0,
+                        1.600000023841858,
+                        5.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        10.0,
+                        3.0,
+                        0.20000000298023224
+                    ]
+                }
+            },
+            "id": 5
+        },
+        {
+            "components": {
+                "continuum.scene.meshRenderer": {
+                    "geometry": "cube"
+                },
+                "continuum.scene.name": {
+                    "name": "left wall"
+                },
+                "continuum.scene.transform": {
+                    "position": [
+                        -5.0,
+                        1.600000023841858,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        0.20000000298023224,
+                        3.0,
+                        10.0
+                    ]
+                }
+            },
+            "id": 6
+        },
+        {
+            "components": {
+                "continuum.scene.meshRenderer": {
+                    "geometry": "cube"
+                },
+                "continuum.scene.name": {
+                    "name": "right wall"
+                },
+                "continuum.scene.transform": {
+                    "position": [
+                        5.0,
+                        1.600000023841858,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        0.20000000298023224,
+                        3.0,
+                        10.0
+                    ]
+                }
+            },
+            "id": 7
+        }
+    ],
+    "formatVersion": 1
+}

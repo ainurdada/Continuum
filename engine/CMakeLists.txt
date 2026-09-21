@@ -3,6 +3,12 @@ add_library(
     INTERFACE
 )
 
+target_include_directories(
+    ContinuumEngine
+    INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+)
+
 add_subdirectory(ecs)
 add_subdirectory(reflection)
 add_subdirectory(reflection_json)
