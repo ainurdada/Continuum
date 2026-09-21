@@ -1,0 +1,42 @@
+#pragma once
+
+#include <SDL3/SDL_log.h>
+#include <imgui.h>
+
+#include <ui/component_drawer.h>
+#include <ui/modifierHelpers.h>
+
+namespace editor::ui {
+
+class IntDrawer : public ComponentDrawer<int> {
+    void draw(DrawContext<int>& ctx) override {
+        using namespace engine::reflection::modifiers;
+        auto value = ctx.getValue();
+
+        auto min = ctx.tryGetModifier<Min>();
+        auto max = ctx.tryGetModifier<Max>();
+        int minI = min ? math::toIntSafe(min->value) : 0;
+        int maxI = max ? math::toIntSafe(max->value) : 0;
+
+        ImGui::BeginDisabled(!ctx.canEdit());
+        bool changed = ImGui::DragScalar((ctx.label() + "###Value").c_str(), ImGuiDataType_S32, &value, getDragSpeed(ctx.field()), min ? &minI : nullptr, max ? &maxI : nullptr, nullptr, ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_AlwaysClamp);
+        bool active = ImGui::IsItemActive();
+        ImGui::EndDisabled();
+
+        if (changed) {
+            auto begin = ctx.beginEdit();
+            if (!begin) {
+                SDL_Log("%s", begin.error().c_str());
+                return;
+            }
+            ctx.getValueMut() = value;
+            ctx.markChanged();
+        }
+
+        if (ctx.isEditing() && !active) {
+            ctx.endEdit();
+        }
+    }
+};
+
+} // namespace editor::ui
