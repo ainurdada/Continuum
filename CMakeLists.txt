@@ -13,5 +13,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 include(cmake/Dependencies.cmake)
 include(cmake/ModuleHelper.cmake)
 include(cmake/ContinuumRuntime.cmake)
+include(cmake/ContinuumReflection.cmake)
 
 add_subdirectory(engine)
+add_subdirectory(tools/reflection_generator)
