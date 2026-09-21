@@ -12,5 +12,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(cmake/Dependencies.cmake)
 include(cmake/ModuleHelper.cmake)
+include(cmake/ContinuumRuntime.cmake)
 
 add_subdirectory(engine)
