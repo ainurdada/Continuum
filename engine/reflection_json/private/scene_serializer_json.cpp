@@ -1,4 +1,4 @@
-#include <scene_serializer.h>
+#include <scene_serializer_json.h>
 
 #include <fstream>
 
@@ -7,7 +7,7 @@
 #include <reflection/public/type_descriptor.h>
 #include <reflection_json/public/json_serialization.h>
 #include <reflection_json/public/json_serialization_registry.h>
-#include <scene_entity_id.h>
+#include <scene/public/scene_entity_id.h>
 
 namespace engine::scene::serialization::json {
 

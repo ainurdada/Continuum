@@ -6,18 +6,18 @@
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_log.h>
 
-#include <ecs_reflection/public/ecs_reflection_bootstrap.h>
 #include <ecs_reflection/public/component_binding_registry.h>
+#include <ecs_reflection/public/ecs_reflection_bootstrap.h>
 #include <engine.h>
 #include <reflection/public/bootstrap.h>
+#include <reflection/public/type_registry.h>
 #include <reflection_json/public/builtin_json_policies.h>
 #include <reflection_json/public/json_serialization_registry.h>
-#include <reflection/public/type_registry.h>
+#include <reflection_json/public/scene_serializer_json.h>
+#include <runtime/public/runtime.h>
 #include <scene/public/camera.h>
 #include <scene/public/mesh_renderer.h>
 #include <scene/public/scene_entity_id.h>
-#include <scene/public/scene_serializer.h>
-#include <runtime/public/runtime.h>
 
 #include "tools/time.h"
 #include <fly_camera_controller.h>

@@ -46,6 +46,7 @@ continuum_link_modules(
     MODULES
     ContinuumEngine
     ContinuumEngine_Scene
+    ContinuumEngine_ReflectionJson
     nlohmann_json::nlohmann_json
     ContinuumImGui
     imguizmo::imguizmo

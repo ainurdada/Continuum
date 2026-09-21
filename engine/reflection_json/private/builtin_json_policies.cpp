@@ -25,6 +25,10 @@ bool registerBuiltinJsonPolicies(JsonSerializationRegistry& reg) {
         return false;
     }
 
+    if (!reg.findPolicy(typeid(engine::scene::Transform)) && !reg.registerPolicy<engine::scene::Transform, TransformJsonPolicy>()) {
+        return false;
+    }
+
     return true;
 }
 
@@ -92,6 +96,92 @@ std::expected<void, std::string> FloatJsonPolicy::deserialize(const nlohmann::js
         return {};
     }
     return std::unexpected("Json is not float");
+}
+
+std::expected<nlohmann::json, std::string> TransformJsonPolicy::serialize(const engine::scene::Transform& value) {
+    nlohmann::json json = nlohmann::json::object();
+
+    nlohmann::json position = nlohmann::json::array();
+    for (int i = 0; i < 3; i++) {
+        auto res = FloatJsonPolicy::serialize(value.position[i]);
+        if (!res) {
+            return std::unexpected(res.error());
+        }
+        position.push_back(res.value());
+    }
+
+    nlohmann::json rotation = nlohmann::json::array();
+    for (int i = 0; i < 3; i++) {
+        auto res = FloatJsonPolicy::serialize(value.rotation[i]);
+        if (!res) {
+            return std::unexpected(res.error());
+        }
+        rotation.push_back(res.value());
+    }
+
+    nlohmann::json scale = nlohmann::json::array();
+    for (int i = 0; i < 3; i++) {
+        auto res = FloatJsonPolicy::serialize(value.scale[i]);
+        if (!res) {
+            return std::unexpected(res.error());
+        }
+        scale.push_back(res.value());
+    }
+
+    json.emplace("position", position);
+    json.emplace("rotation", rotation);
+    json.emplace("scale", scale);
+
+    return json;
+}
+
+std::expected<void, std::string> TransformJsonPolicy::deserialize(const nlohmann::json& json, engine::scene::Transform& value) {
+    if (!json.is_object()) {
+        return std::unexpected("Json is not object");
+    }
+    if (!json.contains("position") || !json.contains("rotation") || !json.contains("scale")) {
+        return std::unexpected("Json does not have valid elements");
+    }
+
+    auto position = json.at("position");
+    auto rotation = json.at("rotation");
+    auto scale = json.at("scale");
+
+    if (!position.is_array() || position.size() != 3 || !rotation.is_array() || rotation.size() != 3 || !scale.is_array() || scale.size() != 3) {
+        return std::unexpected("Json does not have valid elements");
+    }
+
+    engine::scene::Transform transform{};
+
+    for (int i = 0; i < 3; i++) {
+        float element;
+        auto res = FloatJsonPolicy::deserialize(position[i], element);
+        if (!res) {
+            return std::unexpected(res.error());
+        }
+        transform.position[i] = element;
+    }
+
+    for (int i = 0; i < 3; i++) {
+        float element;
+        auto res = FloatJsonPolicy::deserialize(rotation[i], element);
+        if (!res) {
+            return std::unexpected(res.error());
+        }
+        transform.rotation[i] = element;
+    }
+
+    for (int i = 0; i < 3; i++) {
+        float element;
+        auto res = FloatJsonPolicy::deserialize(scale[i], element);
+        if (!res) {
+            return std::unexpected(res.error());
+        }
+        transform.scale[i] = element;
+    }
+
+    value = transform;
+    return {};
 }
 
 } // namespace engine::reflection::serialization

@@ -4,7 +4,6 @@ add_library(
 
     private/builtin_component_metadata.cpp
     private/hierarchy.cpp
-    private/scene_serializer.cpp
     private/transform.cpp
 )
 
@@ -17,10 +16,6 @@ target_link_libraries(
     ContinuumEngine_Math
     ContinuumEngine_Reflection
     ContinuumEngine_Render
-
-    PRIVATE
-    ContinuumEngine_ReflectionJson
-    ContinuumEngine_EcsReflection
 )
 
 continuum_enable_reflection(ContinuumEngine_Scene MODULE Scene ROOTS ${CMAKE_CURRENT_SOURCE_DIR}/public)

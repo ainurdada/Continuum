@@ -7,6 +7,8 @@
 
 #include "json_serialization_registry.h"
 
+#include <scene/public/transform.h>
+
 namespace engine::reflection::serialization {
 
 bool registerBuiltinJsonPolicies(JsonSerializationRegistry& reg);
@@ -34,6 +36,11 @@ struct DoubleJsonPolicy {
 struct FloatJsonPolicy {
     static std::expected<nlohmann::json, std::string> serialize(const float& value);
     static std::expected<void, std::string> deserialize(const nlohmann::json& json, float& value);
+};
+
+struct TransformJsonPolicy {
+    static std::expected<nlohmann::json, std::string> serialize(const engine::scene::Transform& value);
+    static std::expected<void, std::string> deserialize(const nlohmann::json& json, engine::scene::Transform& value);
 };
 
 } // namespace engine::reflection::serialization

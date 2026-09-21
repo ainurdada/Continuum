@@ -10,14 +10,14 @@
 #include <ecs_reflection/public/ecs_reflection_bootstrap.h>
 #include <ecs_reflection/public/world_reflection_context.h>
 #include <edit_snapshot_policy.h>
-#include <render_sdl/public/graphics_context.h>
-#include <render_sdl/public/renderer.h>
 #include <reflection/public/bootstrap.h>
 #include <reflection_json/public/builtin_json_policies.h>
+#include <reflection_json/public/scene_serializer_json.h>
+#include <render_sdl/public/graphics_context.h>
+#include <render_sdl/public/renderer.h>
 #include <scene/public/camera.h>
 #include <scene/public/name.h>
 #include <scene/public/transform.h>
-#include <scene/public/scene_serializer.h>
 
 #include <console_log.h>
 #include <scene_viewport.h>
