@@ -3,8 +3,8 @@
 #include <SDL3/SDL_log.h>
 #include <imgui.h>
 
-#include <editor_session.h>
 #include <ecs/ecs.h>
+#include <editor_session.h>
 #include <scene/public/name.h>
 #include <scene/public/parent.h>
 #include <scene/public/scene_entity_id.h>
@@ -13,18 +13,17 @@ namespace editor {
 
 namespace {
 
-void showOriginEntityNode(engine::ecs::Entity originEntity, const engine::ecs::Stash<engine::scene::Name>& nameStash, const engine::ecs::Stash<engine::scene::Parent>& parentStash, const engine::ecs::Stash<engine::scene::SceneEntityId>& sceneEntityIdStash, const engine::ecs::Query& sceneEntityQuery,
-                          editor::EditorSession& session, engine::ecs_reflection::WorldReflectionContext& ctx) {
+void showOriginEntityNode(engine::ecs::Entity originEntity, const engine::ecs::Stash<engine::scene::Name>& nameStash, const engine::ecs::Stash<engine::scene::SceneEntityId>& sceneEntityIdStash, editor::EditorSession& session, engine::ecs_reflection::WorldReflectionContext& ctx) {
     std::string label = nameStash.get(originEntity)->value + "###entity_" + std::to_string(sceneEntityIdStash.get(originEntity)->value);
+    std::vector<engine::ecs::Entity> childrenToCheck = session.scene().getChildren(originEntity);
     std::vector<engine::ecs::Entity> children{};
-    for (auto sceneEntity : sceneEntityQuery.view()) {
-        if (parentStash.has(sceneEntity)) {
-            auto parent = parentStash.get(sceneEntity);
-            if (parent->entity == originEntity) {
-                children.push_back(sceneEntity);
-            }
+
+    for (auto& child : childrenToCheck) {
+        if (nameStash.has(child) && sceneEntityIdStash.has(child)) {
+            children.push_back(child);
         }
     }
+
     ImGuiTreeNodeFlags treeFlags = ImGuiTreeNodeFlags_OpenOnArrow;
     if (session.selectedEntity().has_value() && session.selectedEntity().value() == originEntity) {
         treeFlags |= ImGuiTreeNodeFlags_Selected;
@@ -38,7 +37,7 @@ void showOriginEntityNode(engine::ecs::Entity originEntity, const engine::ecs::S
     }
     if (nodeOpen) {
         for (auto child : children) {
-            showOriginEntityNode(child, nameStash, parentStash, sceneEntityIdStash, sceneEntityQuery, session, ctx);
+            showOriginEntityNode(child, nameStash, sceneEntityIdStash, session, ctx);
         }
         if (children.size() != 0) {
             ImGui::TreePop();
@@ -50,10 +49,8 @@ void showOriginEntityNode(engine::ecs::Entity originEntity, const engine::ecs::S
 
 void HierarchyPanel::draw(EditorSession& session, engine::ecs_reflection::WorldReflectionContext& ctx) {
     auto& nameStash = session.documentMut().worldMut().getStash<engine::scene::Name>();
-    auto& parentStash = session.documentMut().worldMut().getStash<engine::scene::Parent>();
     auto& sceneEntityIdStash = session.documentMut().worldMut().getStash<engine::scene::SceneEntityId>();
 
-    auto sceneEntityQuery = session.documentMut().worldMut().query().with<engine::scene::SceneEntityId>().with<engine::scene::Name>().build();
     auto originEntityQuery = session.documentMut().worldMut().query().with<engine::scene::SceneEntityId>().with<engine::scene::Name>().without<engine::scene::Parent>().build();
 
     if (ImGui::Begin(HIERARCHY_WINDOW_NAME)) {
@@ -66,7 +63,7 @@ void HierarchyPanel::draw(EditorSession& session, engine::ecs_reflection::WorldR
             }
         }
         for (auto entity : originEntityQuery.view()) {
-            showOriginEntityNode(entity, nameStash, parentStash, sceneEntityIdStash, sceneEntityQuery, session, ctx);
+            showOriginEntityNode(entity, nameStash, sceneEntityIdStash, session, ctx);
         }
     }
     ImGui::End();
