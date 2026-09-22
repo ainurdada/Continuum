@@ -3,3 +3,6 @@ build/
 
 # mac files
 *.DS_Store
+
+# llvm files
+third_party/llvm/*

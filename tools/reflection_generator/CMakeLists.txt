@@ -10,10 +10,8 @@ add_executable(
 target_include_directories(
     ContinuumReflectionGenerator
     SYSTEM PRIVATE
-    "${llvm_SOURCE_DIR}/llvm/include"
-    "${llvm_BINARY_DIR}/include"
-    "${llvm_SOURCE_DIR}/clang/include"
-    "${llvm_BINARY_DIR}/tools/clang/include"
+    "${LLVM_INCLUDE_DIRS}"
+    "${CLANG_INCLUDE_DIRS}"
 )
 
 target_compile_definitions(
@@ -30,14 +28,25 @@ target_link_libraries(
     clangTooling
 )
 
-add_dependencies(ContinuumReflectionGenerator clang-resource-headers)
-
-get_target_property(clangResourceIncludeDir clang-resource-headers RUNTIME_OUTPUT_DIRECTORY)
-
-cmake_path(GET clangResourceIncludeDir PARENT_PATH clangResourceDir)
+set(clangResourceDir "${CONTINUUM_LLVM_SDK_PATH}/lib/clang/22")
 
 target_compile_definitions(ContinuumReflectionGenerator PRIVATE "CONTINUUM_CLANG_RESOURCE_DIR=\"${clangResourceDir}\"")
 
 target_compile_options(ContinuumReflectionGenerator PRIVATE
     $<$<CXX_COMPILER_ID:MSVC>:/bigobj>
 )
+
+if(NOT LLVM_ENABLE_RTTI)
+    target_compile_options(ContinuumReflectionGenerator PRIVATE
+    $<$<CXX_COMPILER_ID:AppleClang>:-fno-rtti>
+    $<$<CXX_COMPILER_ID:MSVC>:/GR->
+)
+endif()
+
+
+if(APPLE)
+    target_link_options(ContinuumReflectionGenerator PRIVATE
+        "LINKER:-lto_library,${CONTINUUM_LLVM_SDK_PATH}/lib/libLTO.dylib"
+    )
+endif()
+
