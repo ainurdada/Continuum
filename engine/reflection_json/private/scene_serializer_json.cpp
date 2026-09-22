@@ -7,6 +7,7 @@
 #include <reflection/public/type_descriptor.h>
 #include <reflection_json/public/json_serialization.h>
 #include <reflection_json/public/json_serialization_registry.h>
+#include <scene/public/parent.h>
 #include <scene/public/scene_entity_id.h>
 
 namespace engine::scene::serialization::json {
@@ -274,6 +275,12 @@ std::expected<void, std::string> SceneSerializerJson::deserialize(ecs::World& wo
 
         ParsedEntity parsedEntity{.id = id.value(), .componentsJson = &entityComponentsJson};
 
+        for (auto component : entityComponentsJson.items()) {
+            if (component.key() == "engine::scene::Parent" && component.value().contains("parent")) {
+                parsedEntity.parent = SceneEntityId{component.value().at("parent").get<std::uint64_t>()};
+            }
+        }
+
         parsedEntities.push_back(parsedEntity);
     }
 
@@ -294,11 +301,16 @@ std::expected<void, std::string> SceneSerializerJson::deserialize(ecs::World& wo
     // SET WORLD BEGIN
 
     std::vector<ecs::Entity> createdEntites{};
+    std::unordered_map<std::uint64_t, ecs::Entity> entitySceneIdMap{};
     for (auto& parsedEntity : parsedEntities) {
         auto entity = world.createEntity();
         world.getStash<scene::SceneEntityId>().add(entity, {parsedEntity.id});
         createdEntites.push_back(entity);
+        entitySceneIdMap.emplace(parsedEntity.id.value, entity);
         for (auto& [key, componentJson] : parsedEntity.componentsJson->items()) {
+            if (key == "engine::scene::Parent") {
+                continue;
+            }
             auto component = loadReflectedComponent(world, entity, key, componentJson, _typeReg, _policies, _bindings);
             if (!component) {
                 for (auto created : createdEntites) {
@@ -306,6 +318,15 @@ std::expected<void, std::string> SceneSerializerJson::deserialize(ecs::World& wo
                 }
                 return std::unexpected("Failed to create component " + key + ": " + component.error());
             }
+        }
+    }
+
+    auto& parentStash = world.getStash<scene::Parent>();
+    for (auto& parsedEntity : parsedEntities) {
+        if (parsedEntity.parent) {
+            auto child = entitySceneIdMap.at(parsedEntity.id.value);
+            auto parent = entitySceneIdMap.at(parsedEntity.parent.value().value);
+            parentStash.add(child, scene::Parent{.entity = parent});
         }
     }
 

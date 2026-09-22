@@ -7,6 +7,7 @@
 #include <ecs/ecs.h>
 #include <ecs_reflection/public/world_reflection_context.h>
 #include <scene/public/scene_entity_id.h>
+#include <scene/scene.h>
 
 #include <component_edit.h>
 #include <edit_snapshot_registry.h>
@@ -18,6 +19,7 @@ namespace editor {
 class EditorSession {
   private:
     std::unique_ptr<SceneDocument> _sceneDocument;
+    std::unique_ptr<engine::Scene> _scene;
     std::optional<engine::ecs::Entity> _selectedEntity{};
 
     std::optional<ComponentEdit> _currentComponentEdit = std::nullopt;
@@ -38,6 +40,14 @@ class EditorSession {
     /// @brief Get mutable scene document
     /// @return Mutable scene document
     SceneDocument& documentMut();
+
+    /// @brief Get scene
+    /// @return Constant scene
+    [[nodiscard]] const engine::Scene& scene() const noexcept;
+
+    /// @brief Get mutable scene
+    /// @return Mutable scene
+    [[nodiscard]] engine::Scene& sceneMut() noexcept;
 
     /// @brief Get selected entity
     /// @return Selected entity or nullopt

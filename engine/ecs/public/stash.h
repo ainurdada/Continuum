@@ -19,7 +19,7 @@ class IStash {
     friend World;
     virtual bool removeStorage(Entity entity) noexcept = 0;
     virtual void prepareAddStorage(Entity entity) = 0;
-    virtual void addPreparedStorage(Entity entity, void* component) noexcept = 0;
+    virtual void* addPreparedStorage(Entity entity, void* component) noexcept = 0;
 };
 
 template <typename T> struct Stash : public IStash {
@@ -47,7 +47,7 @@ template <typename T> struct Stash : public IStash {
     bool addStorage(Entity entity, const T& component);
     bool removeStorage(Entity entity) noexcept override;
     void prepareAddStorage(Entity entity) override;
-    void addPreparedStorage(Entity entity, void* component) noexcept override;
+    void* addPreparedStorage(Entity entity, void* component) noexcept override;
 
   public:
     ComponentID componentId() const noexcept override;

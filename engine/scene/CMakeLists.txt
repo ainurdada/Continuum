@@ -5,6 +5,7 @@ add_library(
     private/builtin_component_metadata.cpp
     private/hierarchy.cpp
     private/transform.cpp
+    private/scene.cpp
 )
 
 set_module_defaults(ContinuumEngine_Scene STATIC)

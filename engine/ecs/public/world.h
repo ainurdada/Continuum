@@ -1,7 +1,10 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <typeindex>
+#include <unordered_map>
+#include <vector>
 
 #include "archetype.h"
 #include "execution_layer.h"
@@ -111,6 +114,26 @@ class World {
     void commit();
 
     SystemGroup& createSystemGroup();
+
+    struct ComponentAddInfo {
+        Entity entity;
+        ComponentID componentId;
+        void* componentData;
+        bool added;
+    };
+
+    using OnComponentAddFn = std::function<void(ComponentAddInfo info)>;
+
+  private:
+    std::vector<OnComponentAddFn> _bindedOnComponentAdd{};
+    std::unordered_map<std::size_t, std::size_t> _componentAddBindingsHandlers{};
+    std::size_t _componentAddBinderCounter = 0;
+
+    void notifyComponentChanged(Entity entity, ComponentID componentId, bool added, void* componentData);
+
+  public:
+    std::size_t bindOnComponentChanged(OnComponentAddFn func);
+    void unbindOnComponentChanged(std::size_t handle);
 };
 
 } // namespace engine::ecs

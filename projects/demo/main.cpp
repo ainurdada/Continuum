@@ -18,6 +18,7 @@
 #include <scene/public/camera.h>
 #include <scene/public/mesh_renderer.h>
 #include <scene/public/scene_entity_id.h>
+#include <scene/scene.h>
 
 #include "tools/time.h"
 #include <fly_camera_controller.h>
@@ -35,6 +36,8 @@ struct GameState {
     engine::ecs_reflection::ComponentBindingRegistry componentBindings;
 
     engine::ecs::World world{};
+    engine::Scene scene{world};
+
     std::optional<engine::ecs::WorldExecution> worldExecution = std::nullopt;
     engine::ecs::Query renderQuery = world.query().with<engine::scene::Transform>().with<engine::scene::MeshRenderer>().build();
     engine::ecs::Query cameraQuery = world.query().with<engine::scene::Transform>().with<engine::scene::Camera>().build();

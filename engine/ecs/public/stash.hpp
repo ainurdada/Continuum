@@ -107,7 +107,7 @@ template <typename T> inline void Stash<T>::prepareAddStorage(Entity entity) {
     }
 }
 
-template <typename T> inline void Stash<T>::addPreparedStorage(Entity entity, void* component) noexcept {
+template <typename T> inline void* Stash<T>::addPreparedStorage(Entity entity, void* component) noexcept {
     assert(_world.hasEntity(entity) || _world.hasReservedEntity(entity));
     assert(component);
     assert(_denseEntities.size() == _denseComponents.size());
@@ -121,6 +121,8 @@ template <typename T> inline void Stash<T>::addPreparedStorage(Entity entity, vo
     _denseEntities.push_back(entity);
     _denseComponents.push_back(std::move(*typedComponent));
     _sparse[entity.index] = newIndex;
+
+    return &_denseComponents.back();
 }
 
 template <typename T> inline ComponentID Stash<T>::componentId() const noexcept {

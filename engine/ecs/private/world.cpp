@@ -151,6 +151,7 @@ bool World::destroyEntityImmediate(Entity entity) {
     for (auto componentId : archetype.signature().get()) {
         bool removeResult = _stashes[componentId]->removeStorage(entity);
         assert(removeResult);
+        notifyComponentChanged(entity, componentId, false, nullptr);
     }
 
     std::size_t row = _slots[entity.index].rowInArchetype;
@@ -285,13 +286,15 @@ void World::applyCommandBuffer(const CommandBuffer& commandBuffer) {
             for (auto& componentId : _archetypeRegistry.get(originAtchetypeId).signature().get()) {
                 if (!targetArchetype.signature().has(componentId) || group.pendingAdds.contains(componentId)) {
                     _stashes[componentId]->removeStorage(group.entity);
+                    notifyComponentChanged(group.entity, componentId, false, nullptr);
                 }
             }
         }
 
         for (auto& [componentId, index] : group.pendingAdds) {
             void* component = commandBuffer._commandPayloadStorages[componentId]->getValue(commandBuffer._requestedCommands[index].payloadIndex);
-            _stashes[componentId]->addPreparedStorage(group.entity, component);
+            void* componentAddress = _stashes[componentId]->addPreparedStorage(group.entity, component);
+            notifyComponentChanged(group.entity, componentId, true, componentAddress);
         }
 
         if (!isEntityReserved) {
@@ -449,6 +452,40 @@ void World::commit() {
 
 SystemGroup& World::createSystemGroup() {
     return _executionLayer.createGroup();
+}
+
+void World::notifyComponentChanged(Entity entity, ComponentID componentId, bool added, void* componentData) {
+    ComponentAddInfo info{
+        .entity = entity,
+        .componentId = componentId,
+        .componentData = componentData,
+        .added = added,
+    };
+
+    for (auto& fn : _bindedOnComponentAdd) {
+        fn(info);
+    }
+}
+
+std::size_t World::bindOnComponentChanged(OnComponentAddFn func) {
+    auto newIndex = _bindedOnComponentAdd.size();
+    _bindedOnComponentAdd.push_back(func);
+    _componentAddBindingsHandlers.emplace(_componentAddBinderCounter, newIndex);
+    _componentAddBinderCounter++;
+    return _componentAddBinderCounter - 1;
+}
+
+void World::unbindOnComponentChanged(std::size_t handle) {
+    auto currentIndex = _componentAddBindingsHandlers.at(handle);
+    _componentAddBindingsHandlers.erase(handle);
+    auto lastIndex = _bindedOnComponentAdd.size() - 1;
+    for (auto& [k, v] : _componentAddBindingsHandlers) {
+        if (v == lastIndex) {
+            v = currentIndex;
+        }
+    }
+    _bindedOnComponentAdd[currentIndex] = std::move(_bindedOnComponentAdd[lastIndex]);
+    _bindedOnComponentAdd.pop_back();
 }
 
 } // namespace engine::ecs

@@ -2,6 +2,7 @@
 
 #ifndef ECS_H_INCLUDED
 #include "ecs/ecs.h"
+#include "world.h"
 #endif
 
 namespace engine::ecs {
@@ -46,6 +47,8 @@ template <typename T> inline void World::addEntityComponent(Entity entity, Stash
         throw;
     }
 
+    notifyComponentChanged(entity, stash.componentId(), true, (void*)stash.getMut(entity));
+
     return;
 }
 
@@ -59,7 +62,9 @@ template <typename T> inline void World::removeEntityComponent(Entity entity, St
 
     validateNoActiveIteration();
 
-    removeEntityComponentImmediate(entity, stash.componentId());
+    if (removeEntityComponentImmediate(entity, stash.componentId())) {
+        notifyComponentChanged(entity, stash.componentId(), false, nullptr);
+    }
 }
 
 template <typename Visitor> inline bool World::visitComponents(Entity entity, Visitor&& visitor) const {

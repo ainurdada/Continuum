@@ -46,6 +46,7 @@ EditorSession::EditorSession(std::unique_ptr<SceneDocument>&& sceneDocument, con
         throw std::invalid_argument("sceneDocument is null");
     }
     _sceneDocument = std::move(sceneDocument);
+    _scene = std::make_unique<engine::Scene>(_sceneDocument->worldMut());
 }
 
 const SceneDocument& EditorSession::document() const noexcept {
@@ -54,6 +55,14 @@ const SceneDocument& EditorSession::document() const noexcept {
 
 SceneDocument& EditorSession::documentMut() {
     return *_sceneDocument;
+}
+
+const engine::Scene& EditorSession::scene() const noexcept {
+    return *_scene;
+}
+
+engine::Scene& EditorSession::sceneMut() noexcept {
+    return *_scene;
 }
 
 std::optional<engine::ecs::Entity> EditorSession::selectedEntity() const noexcept {
