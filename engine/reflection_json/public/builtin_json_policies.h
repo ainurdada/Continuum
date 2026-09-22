@@ -8,6 +8,7 @@
 #include "json_serialization_registry.h"
 
 #include <scene/public/transform.h>
+#include <scene/public/mesh_renderer.h>
 
 namespace engine::reflection::serialization {
 
@@ -41,6 +42,11 @@ struct FloatJsonPolicy {
 struct TransformJsonPolicy {
     static std::expected<nlohmann::json, std::string> serialize(const engine::scene::Transform& value);
     static std::expected<void, std::string> deserialize(const nlohmann::json& json, engine::scene::Transform& value);
+};
+
+struct MeshRendererJsonPolicy {
+    static std::expected<nlohmann::json, std::string> serialize(const engine::scene::MeshRenderer& value);
+    static std::expected<void, std::string> deserialize(const nlohmann::json& json, engine::scene::MeshRenderer& value);
 };
 
 } // namespace engine::reflection::serialization

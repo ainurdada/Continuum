@@ -29,6 +29,10 @@ bool registerBuiltinJsonPolicies(JsonSerializationRegistry& reg) {
         return false;
     }
 
+    if (!reg.findPolicy(typeid(engine::scene::MeshRenderer)) && !reg.registerPolicy<engine::scene::MeshRenderer, MeshRendererJsonPolicy>()) {
+        return false;
+    }
+
     return true;
 }
 
@@ -182,6 +186,43 @@ std::expected<void, std::string> TransformJsonPolicy::deserialize(const nlohmann
 
     value = transform;
     return {};
+}
+
+std::expected<nlohmann::json, std::string> MeshRendererJsonPolicy::serialize(const engine::scene::MeshRenderer& value) {
+    auto json = nlohmann::json::object();
+    switch (value.geometryId) {
+
+    case engine::GeometryId::Cube:
+        json.emplace("geometry", "cube");
+        break;
+
+    default:
+        return std::unexpected("Not supported geometry id");
+    }
+
+    return json;
+}
+
+std::expected<void, std::string> MeshRendererJsonPolicy::deserialize(const nlohmann::json& json, engine::scene::MeshRenderer& value) {
+    if (!json.is_object()) {
+        return std::unexpected("Mesh renderer json is not object");
+    }
+    if (!json.contains("geometry")) {
+        return std::unexpected("Mesh renderer json does not have \"geometry\" field");
+    }
+
+    std::string geometryId;
+    auto geometry = StringJsonPolicy::deserialize(json.at("geometry"), geometryId);
+    if (!geometry) {
+        return std::unexpected(geometry.error());
+    }
+
+    if (geometryId == "cube") {
+        value = engine::scene::MeshRenderer{.geometryId = engine::GeometryId::Cube};
+        return {};
+    } else {
+        return std::unexpected("Not supported geometry id");
+    }
 }
 
 } // namespace engine::reflection::serialization
