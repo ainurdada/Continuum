@@ -8,6 +8,7 @@ add_executable(
     private/analysis/type_analyzer.cpp
     private/analysis/modifier_analyzer.cpp
     private/analysis/markers.cpp
+    private/analysis/frontend.cpp
 )
 
 target_include_directories(
