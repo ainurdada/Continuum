@@ -4,7 +4,14 @@ add_executable(
     ContinuumReflectionGenerator
 
     main.cpp
-    emitter.cpp
+    private/emitter.cpp
+    private/analysis/type_analyzer.cpp
+)
+
+target_include_directories(
+    ContinuumReflectionGenerator
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/private"
 )
 
 target_include_directories(

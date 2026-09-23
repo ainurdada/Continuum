@@ -45,7 +45,8 @@
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/raw_ostream.h>
 
-#include "emitter.h"
+#include <emitter.h>
+#include <analysis/type_analyzer.h>
 
 #define MARKER_NAME_OBJECT "OBJECT"
 #define MARKER_NAME_FIELD "FIELD"
@@ -60,13 +61,6 @@ class ReflectionVisitor : public clang::RecursiveASTVisitor<ReflectionVisitor> {
 
   public:
     ReflectionVisitor(DeclIndex& declIndex, MarkerCheckIndex& markerCheckIndex) : _declIndex(declIndex), _markerCheckIndex(markerCheckIndex) {}
-
-    bool VisitCXXRecordDecl(clang::RecordDecl* record) {
-        if (record->isImplicit() || !record->isThisDeclarationADefinition()) {
-            return true;
-        }
-        return true;
-    }
 
     bool VisitDecl(clang::Decl* decl) {
         if (decl->isImplicit()) {
@@ -108,110 +102,6 @@ struct ParsedMarker {
     std::vector<ModifierModel> modifiers;
     clang::SourceRange location;
 };
-
-// clang-format off
-const std::unordered_map<clang::BuiltinType::Kind, BuiltinKind> clangBuiltinTypeConverts{
-    {clang::BuiltinType::Void,BuiltinKind::Void},
-    {clang::BuiltinType::Bool, BuiltinKind::Bool},
-    {clang::BuiltinType::Int, BuiltinKind::Int},
-    {clang::BuiltinType::Float, BuiltinKind::Float},
-    {clang::BuiltinType::Double, BuiltinKind::Double},
-};
-// clang-format on
-
-bool isCharTemplateArgument(const clang::TemplateArgument& arg, const clang::ASTContext& ctx) {
-    if (arg.getKind() != clang::TemplateArgument::Type) {
-        return false;
-    }
-    auto type = arg.getAsType();
-    return ctx.hasSameType(type, ctx.CharTy);
-}
-
-const clang::ClassTemplateSpecializationDecl* findStdTemplateSpecialization(const clang::CXXRecordDecl& decl, llvm::StringRef str) {
-    auto classSpec = llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(&decl);
-    if (!classSpec) {
-        return nullptr;
-    }
-    auto specTemp = classSpec->getSpecializedTemplate();
-    if (!specTemp || specTemp->getName() != str || !specTemp->isInStdNamespace()) {
-        return nullptr;
-    }
-    return classSpec;
-}
-
-bool isStdCharSpecialization(const clang::CXXRecordDecl& decl, llvm::StringRef str) {
-    auto spec = findStdTemplateSpecialization(decl, str);
-    if (!spec) {
-        return false;
-    }
-    const auto& args = spec->getTemplateArgs();
-    if (args.size() != 1) {
-        return false;
-    }
-    return isCharTemplateArgument(args[0], decl.getASTContext());
-}
-
-bool isStdString(const clang::CXXRecordDecl& decl) {
-    auto spec = findStdTemplateSpecialization(decl, "basic_string");
-    if (!spec) {
-        return false;
-    }
-    const auto& args = spec->getTemplateArgs();
-    if (args.size() != 3 || !isCharTemplateArgument(args[0], decl.getASTContext()) || args[1].getKind() != clang::TemplateArgument::Type || args[2].getKind() != clang::TemplateArgument::Type) {
-        return false;
-    }
-    auto type1 = args[1].getAsType();
-    if (type1.hasQualifiers()) {
-        return false;
-    }
-    auto t1decl = type1->getAsCXXRecordDecl();
-    if (!t1decl || !isStdCharSpecialization(*t1decl, "char_traits")) {
-        return false;
-    }
-    auto type2 = args[2].getAsType();
-    if (type2.hasQualifiers()) {
-        return false;
-    }
-    auto t2decl = type2->getAsCXXRecordDecl();
-    if (!t2decl || !isStdCharSpecialization(*t2decl, "allocator")) {
-        return false;
-    }
-    return true;
-}
-
-TypeRefModel analyzeType(const clang::QualType& type, const std::map<clang::CXXRecordDecl*, ParsedMarker>& objectMarkerMap) {
-    TypeRefModel result{};
-    result.spelling = type.getAsString();
-
-    const clang::QualType canonicalType = type.getCanonicalType();
-
-    if (const auto* record = canonicalType->getAsCXXRecordDecl()) {
-        if (isStdString(*record)) {
-            result.target = BuiltinKind::String;
-        } else {
-            auto recordDef = record->getDefinition();
-            if (recordDef && objectMarkerMap.contains(recordDef)) {
-                RecordTypeRefModel recTypeRef{};
-                recTypeRef.qualifiedName = recordDef->getQualifiedNameAsString();
-                result.target = recTypeRef;
-            }
-        }
-    } else if (const auto* builtin = canonicalType->getAs<clang::BuiltinType>()) {
-        if (clangBuiltinTypeConverts.contains(builtin->getKind())) {
-            result.target = clangBuiltinTypeConverts.at(builtin->getKind());
-        }
-    }
-
-    if (canonicalType.isConstQualified()) {
-        result.qualifiers |= Qualifier::Const;
-    }
-
-    if (canonicalType.isVolatileQualified()) {
-        result.qualifiers |= Qualifier::Volatile;
-    }
-
-    return result;
-}
 
 const clang::DeclRefExpr* getModifierCheckReference(const clang::CallExpr& call) {
     auto callee = call.getCallee();
@@ -589,11 +479,10 @@ std::optional<std::vector<ModifierModel>> analyzeMarkerModifiers(const clang::Ca
 }
 
 class ReflectionPPCallbacks : public clang::PPCallbacks {
-    clang::Preprocessor& _preprocessor;
     std::vector<ParsedMarker>& _markers;
 
   public:
-    ReflectionPPCallbacks(clang::Preprocessor& preproc, std::vector<ParsedMarker>& markers) : _preprocessor(preproc), _markers(markers) {}
+    ReflectionPPCallbacks(std::vector<ParsedMarker>& markers) : _markers(markers) {}
 
     void MacroExpands(const clang::Token& token, const clang::MacroDefinition& d, clang::SourceRange s, const clang::MacroArgs* args) override {
         auto info = token.getIdentifierInfo();
@@ -709,6 +598,11 @@ class ReflectionConsumer : public clang::ASTConsumer {
                 }
                 objectMarkerMap.emplace(cxxRec, marker);
             }
+        }
+
+        std::set<clang::CXXRecordDecl*> availableClasses{};
+        for (auto& [k, v] : objectMarkerMap) {
+            availableClasses.emplace(k);
         }
 
         // field run
@@ -839,7 +733,7 @@ class ReflectionConsumer : public clang::ASTConsumer {
                     auto fieldMarker = fieldMarkerMap.at(field);
                     FieldModel fieldModel{};
                     fieldModel.name = field->getNameAsString();
-                    fieldModel.type = analyzeType(field->getType(), objectMarkerMap);
+                    fieldModel.type = analyzeType(field->getType(), availableClasses);
 
                     switch (field->getAccess()) {
                     case clang::AS_private:
@@ -857,8 +751,6 @@ class ReflectionConsumer : public clang::ASTConsumer {
                     default:
                         break;
                     }
-
-                    const clang::QualType canonicalType = field->getType().getCanonicalType();
 
                     if (std::holds_alternative<std::monostate>(fieldModel.type.target)) {
                         auto& diag = ctx.getDiagnostics();
@@ -878,7 +770,7 @@ class ReflectionConsumer : public clang::ASTConsumer {
                     MethodModel methodModel{};
                     methodModel.name = method->getQualifiedNameAsString();
 
-                    methodModel.returnType = analyzeType(method->getReturnType(), objectMarkerMap);
+                    methodModel.returnType = analyzeType(method->getReturnType(), availableClasses);
                     if (std::holds_alternative<std::monostate>(methodModel.returnType.target)) {
                         auto& diag = ctx.getDiagnostics();
                         auto diagId = diag.getCustomDiagID(clang::DiagnosticsEngine::Error, "not supported return type");
@@ -920,7 +812,7 @@ class ReflectionConsumer : public clang::ASTConsumer {
                     for (auto parameter : method->parameters()) {
                         ParameterModel parameterModel{};
                         parameterModel.name = parameter->getNameAsString();
-                        parameterModel.type = analyzeType(parameter->getType(), objectMarkerMap);
+                        parameterModel.type = analyzeType(parameter->getType(), availableClasses);
                         if (std::holds_alternative<std::monostate>(parameterModel.type.target)) {
                             auto& diag = ctx.getDiagnostics();
                             auto diagId = diag.getCustomDiagID(clang::DiagnosticsEngine::Error, "not supported parameter type");
@@ -954,7 +846,7 @@ class ReflectionAction : public clang::ASTFrontendAction {
 
     bool BeginSourceFileAction(clang::CompilerInstance& compiler) override {
         _parsedMarkers.clear();
-        compiler.getPreprocessor().addPPCallbacks(std::make_unique<ReflectionPPCallbacks>(compiler.getPreprocessor(), _parsedMarkers));
+        compiler.getPreprocessor().addPPCallbacks(std::make_unique<ReflectionPPCallbacks>(_parsedMarkers));
         return true;
     }
 

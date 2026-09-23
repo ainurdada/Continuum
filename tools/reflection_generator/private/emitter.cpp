@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <variant>
 #include <vector>
+#include <unordered_map>
+#include <span>
 
 const std::unordered_map<BuiltinKind, std::string> builtinKindEmitMap{
     {BuiltinKind::Void, "engine::reflection::voidType()"},   {BuiltinKind::Bool, "engine::reflection::boolType()"},     {BuiltinKind::Int, "engine::reflection::intType()"},
@@ -16,6 +18,8 @@ const std::map<Qualifier, std::string> qualifiersEmitMap{
     {Qualifier::Const, "engine::reflection::TypeQualifier::Const"},
     {Qualifier::Volatile, "engine::reflection::TypeQualifier::Volatile"},
 };
+
+namespace {
 
 std::string getFieldReaderName(const FieldModel& field, std::size_t typeIndex, std::size_t fieldIndex) {
     std::string command = "";
@@ -42,6 +46,20 @@ std::string emitKeyExpression(const std::vector<ModifierModel>& mods, const std:
         }
     }
     return "\"" + defaultKey + "\"";
+}
+
+std::string emitNativeTypeKey(const TypeRefModel& ref) {
+    if (std::holds_alternative<BuiltinKind>(ref.target)) {
+        auto builtinKind = std::get<BuiltinKind>(ref.target);
+        if (!builtinKindEmitMap.contains(builtinKind)) {
+            throw std::logic_error("No builtin kind in map");
+        }
+        return builtinKindEmitMap.at(builtinKind) + "->nativeTypeKey";
+    }
+    if (std::holds_alternative<RecordTypeRefModel>(ref.target)) {
+        return "typeid(::" + std::get<RecordTypeRefModel>(ref.target).qualifiedName + ")";
+    }
+    throw std::runtime_error("Uknown type");
 }
 
 std::string emitFieldDescriptor(const FieldModel& model, std::string readAddress, std::string mutableAddress, const std::string& prefix) {
@@ -123,6 +141,25 @@ std::string emitFieldMutableAccessor(const TypeModel& owner, std::size_t typeInd
     return command;
 }
 
+std::string emitModifierStorage(std::span<const ModifierModel> modifiers, const std::string& prefix) {
+    std::string command = "";
+
+    for (std::size_t i = 0; i < modifiers.size(); i++) {
+        command += "static constexpr auto " + prefix + "_value_" + std::to_string(i) + " = " + modifiers[i].initializationExpression + ";\n";
+    }
+
+    command += "static const std::array<engine::reflection::detail::ModifierEntry, " + std::to_string(modifiers.size()) + "> " + prefix + "_entries{";
+    if (!modifiers.empty()) {
+        command += "\n";
+        for (std::size_t i = 0; i < modifiers.size(); i++) {
+            command += "::engine::reflection::detail::ModifierEntry(" + prefix + "_value_" + std::to_string(i) + "),\n";
+        }
+    }
+    command += "};\n";
+
+    return command;
+}
+
 std::string emitFieldArray(const TypeModel& typeModel, std::size_t modelIndex) {
     std::string command = "";
     for (std::size_t i = 0; i < typeModel.fields.size(); i++) {
@@ -144,20 +181,6 @@ std::string emitFieldArray(const TypeModel& typeModel, std::size_t modelIndex) {
     }
     command += "};";
     return command;
-}
-
-std::string emitNativeTypeKey(const TypeRefModel& ref) {
-    if (std::holds_alternative<BuiltinKind>(ref.target)) {
-        auto builtinKind = std::get<BuiltinKind>(ref.target);
-        if (!builtinKindEmitMap.contains(builtinKind)) {
-            throw std::logic_error("No builtin kind in map");
-        }
-        return builtinKindEmitMap.at(builtinKind) + "->nativeTypeKey";
-    }
-    if (std::holds_alternative<RecordTypeRefModel>(ref.target)) {
-        return "typeid(::" + std::get<RecordTypeRefModel>(ref.target).qualifiedName + ")";
-    }
-    throw std::runtime_error("Uknown type");
 }
 
 std::string emitTypeDescriptor(const TypeModel& typeModel, std::size_t modelIndex) {
@@ -209,23 +232,6 @@ std::string emitComponentRegistration(const TypeModel& typeModel) {
     return command;
 }
 
-std::string emitModifierStorage(std::span<const ModifierModel> modifiers, const std::string& prefix) {
-    std::string command = "";
-
-    for (std::size_t i = 0; i < modifiers.size(); i++) {
-        command += "static constexpr auto " + prefix + "_value_" + std::to_string(i) + " = " + modifiers[i].initializationExpression + ";\n";
-    }
-
-    command += "static const std::array<engine::reflection::detail::ModifierEntry, " + std::to_string(modifiers.size()) + "> " + prefix + "_entries{";
-    if (!modifiers.empty()) {
-        command += "\n";
-        for (std::size_t i = 0; i < modifiers.size(); i++) {
-            command += "::engine::reflection::detail::ModifierEntry(" + prefix + "_value_" + std::to_string(i) + "),\n";
-        }
-    }
-    command += "};\n";
-
-    return command;
 }
 
 std::string emitSnapshotPolicySource(const std::vector<TypeModel>& typeModels, const std::vector<std::string>& includePaths, std::string moduleName) {
