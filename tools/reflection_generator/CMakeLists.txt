@@ -6,6 +6,8 @@ add_executable(
     main.cpp
     private/emitter.cpp
     private/analysis/type_analyzer.cpp
+    private/analysis/modifier_analyzer.cpp
+    private/analysis/markers.cpp
 )
 
 target_include_directories(
