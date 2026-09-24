@@ -9,6 +9,8 @@
 #include <scene/public/mesh_renderer.h>
 #include <scene/public/transform.h>
 
+#include <prepare_game.h>
+
 std::expected<void, std::string> editor::PlaySession::run(const nlohmann::json& sceneJson, engine::reflection::TypeRegistry& typeReg, engine::reflection::serialization::JsonSerializationRegistry& policies, engine::ecs_reflection::ComponentBindingRegistry& bindings) {
     engine::scene::serialization::json::SceneSerializerJson serializer{typeReg, policies, bindings};
 
@@ -18,6 +20,7 @@ std::expected<void, std::string> editor::PlaySession::run(const nlohmann::json& 
     }
 
     try {
+        prepareGame(_world);
         _worldExecution.awake();
     } catch (std::exception& err) {
         return std::unexpected(err.what());
