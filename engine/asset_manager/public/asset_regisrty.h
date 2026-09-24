@@ -24,6 +24,8 @@ class AssetRegistry {
 
     std::expected<void, std::string> registerAsset(const std::filesystem::path& file);
     std::optional<AssetInfo> getAsset(const AssetID& id);
+
+    std::expected<void, std::string> registerProjectFiles();
 };
 
 } // namespace engine::asset

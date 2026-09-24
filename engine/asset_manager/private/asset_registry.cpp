@@ -71,4 +71,50 @@ std::optional<AssetInfo> AssetRegistry::getAsset(const AssetID& id) {
     return _assets.at(id);
 }
 
+std::expected<void, std::string> AssetRegistry::registerProjectFiles() {
+    std::filesystem::path assetsPath = _projectPath / "assets";
+    std::error_code ec;
+    if (!std::filesystem::exists(assetsPath, ec)) {
+        if (ec) {
+            return std::unexpected("Failed to check assets folder: " + ec.message());
+        }
+        return std::unexpected("Missing assets folder: " + assetsPath.string());
+    }
+
+    try {
+        auto iter = std::filesystem::recursive_directory_iterator(assetsPath, std::filesystem::directory_options::none, ec);
+
+        if (ec) {
+            return std::unexpected("Failed initialize assets folder iterator: " + ec.message());
+        }
+
+        auto endIter = std::filesystem::recursive_directory_iterator();
+
+        while (iter != endIter) {
+            const auto& entry = *iter;
+
+            try {
+                if (entry.is_regular_file() && entry.path().extension() == ".obj") {
+                    auto registrationResult = registerAsset(entry.path());
+                    if (!registrationResult) {
+                        return std::unexpected(registrationResult.error());
+                    }
+                }
+            } catch (const std::filesystem::filesystem_error& e) {
+                return std::unexpected("Failed to get access to file: " + entry.path().string() + " (" + e.what() + ")");
+            }
+
+            auto p = iter->path();
+            iter.increment(ec);
+            if (ec) {
+                return std::unexpected("Failed to read element: " + p.string() + " (" + ec.message() + ")");
+            }
+        }
+    } catch (const std::exception& e) {
+        return std::unexpected(std::string("Unexpected error: ") + e.what());
+    }
+
+    return {};
+}
+
 } // namespace engine::asset
