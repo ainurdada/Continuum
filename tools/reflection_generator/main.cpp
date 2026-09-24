@@ -9,23 +9,20 @@
 #include <vector>
 
 #include <analysis/frontend.h>
-#include <emitter.h>
+#include <emission/ecs_emitter.h>
+#include <emission/snapshot_emitter.h>
+#include <emission/reflection_emitter.h>
+#include <file_io.h>
 
 std::vector<std::filesystem::path> readHeadersManifest(const std::filesystem::path& manifest) {
-    std::ifstream file(manifest);
-    if (!file.is_open()) {
-        throw std::runtime_error("Failed to open file" + manifest.string());
-    }
-
     std::vector<std::filesystem::path> result{};
-    std::string currentPath;
-
-    while (std::getline(file, currentPath)) {
-        result.push_back(std::filesystem::path{currentPath});
+    auto read = readTextLines(manifest);
+    if (!read) {
+        throw std::runtime_error(read.error());
     }
 
-    if (file.bad() || !file.eof()) {
-        throw std::runtime_error("Failed to read file correctly" + manifest.string());
+    for (auto& line : read.value()) {
+        result.push_back(std::filesystem::path{line});
     }
 
     return result;
@@ -64,27 +61,20 @@ bool isValidModuleName(const std::string& moduleName) {
 }
 
 std::vector<std::string> readModulesManifest(const std::filesystem::path& manifestPath) {
-    std::ifstream file(manifestPath);
-    if (!file.is_open()) {
-        throw std::runtime_error("Failed to open file: " + manifestPath.generic_string());
+    auto read = readTextLines(manifestPath);
+    if (!read) {
+        throw std::runtime_error(read.error());
     }
 
-    std::vector<std::string> result{};
-    std::string line;
     int lineNum = 1;
-    while (std::getline(file, line)) {
+    for (auto& line : read.value()) {
         if (!isValidModuleName(line)) {
             throw std::runtime_error("Not valid module name: " + manifestPath.generic_string() + ":" + std::to_string(lineNum));
         }
-        result.push_back(line);
         lineNum++;
     }
 
-    if (file.bad() || !file.eof()) {
-        throw std::runtime_error("Failed to read file correctly" + manifestPath.string());
-    }
-
-    return result;
+    return read.value();
 }
 
 int main(int argc, char* argv[]) {
@@ -103,52 +93,22 @@ int main(int argc, char* argv[]) {
                 editorbootstrap = emitSnapshotBootstrapSource(modules);
             }
 
-            std::ofstream file(argv[3]);
-            if (!file.is_open()) {
-                std::cerr << "Failed to open file: " << argv[3];
-                return 1;
-            }
-            file << reflectionBootstrap;
-            if (file.fail()) {
-                std::cerr << "failed to write into file: " << argv[3] << std::endl;
-                return 1;
-            }
-            file.close();
-            if (file.fail()) {
-                std::cerr << "failed to close file: " << argv[3] << std::endl;
+            auto writeResult = writeTextFile(argv[3], reflectionBootstrap);
+            if (!writeResult) {
+                std::cerr << writeResult.error() << "\n";
                 return 1;
             }
 
-            std::ofstream fileEcs(argv[4]);
-            if (!fileEcs.is_open()) {
-                std::cerr << "Failed to open file: " << argv[4];
-                return 1;
-            }
-            fileEcs << reflectionEcsBootstrap;
-            if (fileEcs.fail()) {
-                std::cerr << "failed to write into file: " << argv[4] << std::endl;
-                return 1;
-            }
-            fileEcs.close();
-            if (fileEcs.fail()) {
-                std::cerr << "failed to close file: " << argv[4] << std::endl;
+            writeResult = writeTextFile(argv[4], reflectionEcsBootstrap);
+            if (!writeResult) {
+                std::cerr << writeResult.error() << "\n";
                 return 1;
             }
 
             if (argc == 6) {
-                std::ofstream fileEditor(argv[5]);
-                if (!fileEditor.is_open()) {
-                    std::cerr << "Failed to open file: " << argv[5];
-                    return 1;
-                }
-                fileEditor << editorbootstrap;
-                if (fileEditor.fail()) {
-                    std::cerr << "failed to write into file: " << argv[5] << std::endl;
-                    return 1;
-                }
-                fileEditor.close();
-                if (fileEditor.fail()) {
-                    std::cerr << "failed to close file: " << argv[5] << std::endl;
+                writeResult = writeTextFile(argv[5], editorbootstrap);
+                if (!writeResult) {
+                    std::cerr << writeResult.error() << "\n";
                     return 1;
                 }
             }
@@ -238,55 +198,25 @@ int main(int argc, char* argv[]) {
                 includeEcsPaths.push_back(std::filesystem::relative(header, outputEcsDirectory).generic_string());
             }
 
-            auto emitedSource = emitSource(typeModels, includePaths, moduleName);
+            auto emitedSource = emitReflectionSource(typeModels, includePaths, moduleName);
             auto emitedEcsSource = emitEcsBindingSource(typeModels, includeEcsPaths, moduleName);
             auto emitedSnapshotSource = emitSnapshotPolicySource(typeModels, includePaths, moduleName);
 
-            std::ofstream outFile(argv[outputIndex]);
-            if (!outFile.is_open()) {
-                std::cerr << "failed to open file: " << argv[outputIndex] << std::endl;
-                return 1;
-            }
-            outFile << emitedSource;
-            if (outFile.fail()) {
-                std::cerr << "failed to write into file: " << argv[outputIndex] << std::endl;
-                return 1;
-            }
-            outFile.close();
-            if (outFile.fail()) {
-                std::cerr << "failed to close file: " << argv[outputIndex] << std::endl;
+            auto writeResult = writeTextFile(argv[outputIndex], emitedSource);
+            if (!writeResult) {
+                std::cerr << writeResult.error() << "\n";
                 return 1;
             }
 
-            std::ofstream outEcsFile(argv[ecsOutputIndex]);
-            if (!outEcsFile.is_open()) {
-                std::cerr << "failed to open file: " << argv[ecsOutputIndex] << std::endl;
-                return 1;
-            }
-            outEcsFile << emitedEcsSource;
-            if (outEcsFile.fail()) {
-                std::cerr << "failed to write into file: " << argv[ecsOutputIndex] << std::endl;
-                return 1;
-            }
-            outEcsFile.close();
-            if (outEcsFile.fail()) {
-                std::cerr << "failed to close file: " << argv[ecsOutputIndex] << std::endl;
+            writeResult = writeTextFile(argv[ecsOutputIndex], emitedEcsSource);
+            if (!writeResult) {
+                std::cerr << writeResult.error() << "\n";
                 return 1;
             }
 
-            std::ofstream outSnapshotPolicyFile(snapshotOutputPath);
-            if (!outSnapshotPolicyFile.is_open()) {
-                std::cerr << "failed to open file: " << snapshotOutputPath.generic_string() << std::endl;
-                return 1;
-            }
-            outSnapshotPolicyFile << emitedSnapshotSource;
-            if (outSnapshotPolicyFile.fail()) {
-                std::cerr << "failed to write into file: " << snapshotOutputPath.generic_string() << std::endl;
-                return 1;
-            }
-            outSnapshotPolicyFile.close();
-            if (outSnapshotPolicyFile.fail()) {
-                std::cerr << "failed to close file: " << snapshotOutputPath.generic_string() << std::endl;
+            writeResult = writeTextFile(snapshotOutputPath, emitedSnapshotSource);
+            if (!writeResult) {
+                std::cerr << writeResult.error() << "\n";
                 return 1;
             }
         } else {

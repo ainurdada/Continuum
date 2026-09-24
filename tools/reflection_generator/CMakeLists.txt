@@ -4,11 +4,14 @@ add_executable(
     ContinuumReflectionGenerator
 
     main.cpp
-    private/emitter.cpp
+    private/emission/reflection_emitter.cpp
     private/analysis/type_analyzer.cpp
     private/analysis/modifier_analyzer.cpp
     private/analysis/markers.cpp
     private/analysis/frontend.cpp
+    private/file_io.cpp
+    private/emission/ecs_emitter.cpp
+    private/emission/snapshot_emitter.cpp
 )
 
 target_include_directories(
