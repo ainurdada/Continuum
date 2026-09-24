@@ -59,7 +59,7 @@ class SceneViewport {
 
     SceneViewport(SDL_Window* window, SDL_GPUDevice* device, SDL_GPUTextureFormat format);
 
-    std::expected<std::optional<SceneViewportFrame>, std::string> draw(EditorSession& session, engine::ecs_reflection::WorldReflectionContext& ctx);
+    std::expected<std::optional<SceneViewportFrame>, std::string> draw(EditorSession& session, engine::ecs_reflection::WorldReflectionContext& ctx, engine::RenderFrameData& rfd, bool play);
 
     void stopMouseLook();
 };

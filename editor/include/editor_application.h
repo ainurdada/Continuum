@@ -14,6 +14,7 @@
 #include <project.h>
 #include <scene_document.h>
 #include <ui/component_drawer_registry.h>
+#include <play_session.h>
 
 #include <ecs_reflection/public/component_binding_registry.h>
 #include <reflection_json/public/json_serialization_registry.h>
@@ -32,6 +33,7 @@ class EditorApplication {
     ui::ComponentDrawerRegistry _componentDrawers;
 
     std::optional<EditorSession> _session;
+    std::unique_ptr<PlaySession> _playSession;
 
     HierarchyPanel _hierarchy{};
     InspectorPanel _inspector{};

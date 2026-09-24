@@ -1,5 +1,6 @@
 #include <world.h>
 
+#include "execution_layer.h"
 #include <cassert>
 #include <limits>
 #include <stdexcept>
@@ -18,6 +19,9 @@ void WorldExecution::destroy() {
     _world._executionLayer.destroy();
 }
 
+ExecutionLayer::State WorldExecution::state() const {
+    return _world._executionLayer._state;
+}
 World::IterationScope::IterationScope(std::size_t& counter) : _counter(counter) {
     _counter++;
 }

@@ -15,6 +15,7 @@ class ExecutionLayer {
     friend World;
     friend class WorldExecution;
 
+  public:
     enum class State {
         Configuring,
         Initializing,
@@ -24,6 +25,7 @@ class ExecutionLayer {
         Destroyed
     };
 
+  private:
     State _state = State::Configuring;
 
     World& _world;
@@ -58,6 +60,7 @@ class WorldExecution {
     void awake();
     void update(float deltaTime);
     void destroy();
+    ExecutionLayer::State state() const;
 };
 
 } // namespace engine::ecs

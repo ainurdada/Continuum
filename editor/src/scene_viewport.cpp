@@ -21,21 +21,31 @@ SceneViewport::SceneViewport(SDL_Window* window, SDL_GPUDevice* device, SDL_GPUT
     _editorCameraTransform.rotation.x = glm::radians(30.0f);
 }
 
-std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::draw(EditorSession& session, engine::ecs_reflection::WorldReflectionContext& ctx) {
+std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::draw(EditorSession& session, engine::ecs_reflection::WorldReflectionContext& ctx, engine::RenderFrameData& rfd, bool play) {
+    auto validCamera = [](const engine::RenderCameraData& camera) { return camera.nearPlane > 0 && camera.farPlane > camera.nearPlane && camera.verticalFovRadians > 0 && camera.verticalFovRadians < math::pi<float>(); };
     std::string error{};
     ImGuiIO& io = ImGui::GetIO();
     bool gizmoIsActive = false;
     SceneViewportFrame frame{};
-    frame.rfd.drawGlobalGrid = true;
-    frame.rfd.camera.verticalFovRadians = _editorCamera.verticalFov;
-    frame.rfd.camera.nearPlane = _editorCamera.nearPlane;
-    frame.rfd.camera.farPlane = _editorCamera.farPlane;
+    if (!play) {
+        frame.rfd.drawGlobalGrid = true;
+    }
+    if (play) {
+        frame.rfd.items = rfd.items;
+    }
+    if (!play || !validCamera(rfd.camera)) {
+        frame.rfd.camera.verticalFovRadians = _editorCamera.verticalFov;
+        frame.rfd.camera.nearPlane = _editorCamera.nearPlane;
+        frame.rfd.camera.farPlane = _editorCamera.farPlane;
+    } else {
+        frame.rfd.camera = rfd.camera;
+    }
     bool sceneViewRenderable = false;
     ImVec2 viewportSize{};
     ImVec2 rectMin{};
     ImVec2 rectSize{};
     if (ImGui::Begin(SCENE_VIEW_WINDOW_NAME, nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_MenuBar)) {
-        if (ImGui::BeginMenuBar()) {
+        if (!play && ImGui::BeginMenuBar()) {
             if (ImGui::RadioButton("Move (E)", _gizmoOperation == ImGuizmo::TRANSLATE)) {
                 _gizmoOperation = ImGuizmo::TRANSLATE;
             }
@@ -104,38 +114,40 @@ std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::dra
         if (_isActiveMouseLook && !ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
             stopMouseLook();
         }
-        if (_isActiveMouseLook) {
-            _editorCameraTransform.rotation.y += io.MouseDelta.x * mouseSensitivity;
-            _editorCameraTransform.rotation.x += io.MouseDelta.y * mouseSensitivity;
-            _editorCameraTransform.rotation.x = glm::clamp(_editorCameraTransform.rotation.x, glm::radians(-89.0f), glm::radians(89.0f));
-            Vec3f cameraMoveDirection{};
-            if (ImGui::IsKeyDown(ImGuiKey_A)) {
-                cameraMoveDirection.x -= 1.0;
+        if (!play || !validCamera(rfd.camera)) {
+            if (_isActiveMouseLook) {
+                _editorCameraTransform.rotation.y += io.MouseDelta.x * mouseSensitivity;
+                _editorCameraTransform.rotation.x += io.MouseDelta.y * mouseSensitivity;
+                _editorCameraTransform.rotation.x = glm::clamp(_editorCameraTransform.rotation.x, glm::radians(-89.0f), glm::radians(89.0f));
+                Vec3f cameraMoveDirection{};
+                if (ImGui::IsKeyDown(ImGuiKey_A)) {
+                    cameraMoveDirection.x -= 1.0;
+                }
+                if (ImGui::IsKeyDown(ImGuiKey_D)) {
+                    cameraMoveDirection.x += 1.0;
+                }
+                if (ImGui::IsKeyDown(ImGuiKey_W)) {
+                    cameraMoveDirection.z += 1.0;
+                }
+                if (ImGui::IsKeyDown(ImGuiKey_S)) {
+                    cameraMoveDirection.z -= 1.0;
+                }
+                float heightDelta = 0;
+                if (ImGui::IsKeyDown(ImGuiKey_E)) {
+                    heightDelta += 1.0;
+                }
+                if (ImGui::IsKeyDown(ImGuiKey_Q)) {
+                    heightDelta -= 1.0;
+                }
+                Vec3f worldCameraMoveDirection = math::transformDirection(engine::scene::localMatrix(_editorCameraTransform), cameraMoveDirection);
+                Vec3f desiredTranslation = worldCameraMoveDirection + math::worldUp * heightDelta;
+                if (math::length(desiredTranslation) > 0) {
+                    desiredTranslation = math::normalize(desiredTranslation);
+                }
+                _editorCameraTransform.position += desiredTranslation * cameraMoveSpeed * io.DeltaTime;
             }
-            if (ImGui::IsKeyDown(ImGuiKey_D)) {
-                cameraMoveDirection.x += 1.0;
-            }
-            if (ImGui::IsKeyDown(ImGuiKey_W)) {
-                cameraMoveDirection.z += 1.0;
-            }
-            if (ImGui::IsKeyDown(ImGuiKey_S)) {
-                cameraMoveDirection.z -= 1.0;
-            }
-            float heightDelta = 0;
-            if (ImGui::IsKeyDown(ImGuiKey_E)) {
-                heightDelta += 1.0;
-            }
-            if (ImGui::IsKeyDown(ImGuiKey_Q)) {
-                heightDelta -= 1.0;
-            }
-            Vec3f worldCameraMoveDirection = math::transformDirection(engine::scene::localMatrix(_editorCameraTransform), cameraMoveDirection);
-            Vec3f desiredTranslation = worldCameraMoveDirection + math::worldUp * heightDelta;
-            if (math::length(desiredTranslation) > 0) {
-                desiredTranslation = math::normalize(desiredTranslation);
-            }
-            _editorCameraTransform.position += desiredTranslation * cameraMoveSpeed * io.DeltaTime;
+            frame.rfd.camera.viewMatrix = math::inverse(engine::scene::localMatrix(_editorCameraTransform));
         }
-        frame.rfd.camera.viewMatrix = math::inverse(engine::scene::localMatrix(_editorCameraTransform));
     }
 
     auto& transformStash = session.documentMut().worldMut().getStash<engine::scene::Transform>();
@@ -146,7 +158,7 @@ std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::dra
 
     if (sceneViewRenderable) {
         // gizmo
-        if (session.selectedEntity() && transformStash.has(session.selectedEntity().value())) {
+        if (!play && session.selectedEntity() && transformStash.has(session.selectedEntity().value())) {
             auto worldMatrix = engine::scene::worldMatrix(session.document().world(), session.selectedEntity().value());
             if (worldMatrix.has_value()) {
                 Mat4f gizmoMatrix = worldMatrix.value();
@@ -218,14 +230,16 @@ std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::dra
                 }
             }
         }
-        for (auto entity : renderableEntityQuery.view()) {
-            auto worldMatrix = engine::scene::worldMatrix(session.document().world(), entity);
-            if (!worldMatrix.has_value()) {
-                SDL_Log("fail to get transform for entity(id: %u, generation: %u)", entity.index, entity.generation);
-                continue;
+        if (!play) {
+            for (auto entity : renderableEntityQuery.view()) {
+                auto worldMatrix = engine::scene::worldMatrix(session.document().world(), entity);
+                if (!worldMatrix.has_value()) {
+                    SDL_Log("fail to get transform for entity(id: %u, generation: %u)", entity.index, entity.generation);
+                    continue;
+                }
+                auto meshRenderer = meshRendererStash.get(entity);
+                frame.rfd.items.push_back(engine::RenderItem{.geometryId = meshRenderer->geometryId, .modelMatrix = worldMatrix.value()});
             }
-            auto meshRenderer = meshRendererStash.get(entity);
-            frame.rfd.items.push_back(engine::RenderItem{.geometryId = meshRenderer->geometryId, .modelMatrix = worldMatrix.value()});
         }
     }
     ImGui::End();

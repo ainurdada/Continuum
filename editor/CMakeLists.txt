@@ -38,6 +38,7 @@ add_executable(
     include/ui/modifierHelpers.h
     include/ui/drawers/string_drawer.h
     include/snapshot_bootstrap.h
+    src/play_session.cpp
 )
 
 continuum_link_modules(

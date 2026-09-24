@@ -55,27 +55,64 @@ bool EditorApplication::trySaveScene(engine::ecs_reflection::WorldReflectionCont
 void EditorApplication::drawMainMenuBar(engine::ecs_reflection::WorldReflectionContext& ctx) {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
+            ImGui::BeginDisabled(_playSession.get());
             if (ImGui::MenuItem("Save scene", nullptr, false, _session->document().isDirty())) {
                 trySaveScene(ctx);
             }
 
+            ImGui::EndDisabled();
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Edit")) {
+            ImGui::BeginDisabled(_playSession.get());
             if (ImGui::MenuItem("Undo", "Ctrl/Cmd+Z", false, _session->canUndo())) {
                 _session->undo(ctx);
             }
             if (ImGui::MenuItem("Redo", "Ctrl/Cmd+Shift+Z", false, _session->canRedo())) {
                 _session->redo(ctx);
             }
+
+            ImGui::EndDisabled();
             ImGui::EndMenu();
         }
-        ImGui::BeginDisabled(true);
+        ImGui::BeginDisabled(_playSession.get());
         ImGui::SameLine();
         if (ImGui::Button("Play")) {
+            auto preparePlaySession = [this, &ctx]() -> std::unique_ptr<PlaySession> {
+                auto finishEdit = _session->finishActiveComponentEdit(ctx);
+                if (!finishEdit) {
+                    SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "%s", finishEdit.error().c_str());
+                    return nullptr;
+                }
+                std::unique_ptr<PlaySession> play = std::make_unique<PlaySession>();
+                engine::scene::serialization::json::SceneSerializerJson serializer{_typeRegistry, _jsonSerializationRegistry, _componentBindings};
+                auto worldJson = serializer.worldToJson(_session->documentMut().worldMut());
+                if (!worldJson) {
+                    SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "%s", worldJson.error().c_str());
+                    return nullptr;
+                }
+
+                auto runResult = play->run(worldJson.value(), _typeRegistry, _jsonSerializationRegistry, _componentBindings);
+                if (!runResult) {
+                    SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "%s", runResult.error().c_str());
+                    return nullptr;
+                }
+
+                return std::move(play);
+            };
+
+            auto play = preparePlaySession();
+            if (play) {
+                _playSession = std::move(play);
+            }
         }
+        ImGui::EndDisabled();
+        ImGui::BeginDisabled(!_playSession.get());
         ImGui::SameLine();
         if (ImGui::Button("Stop")) {
+            if (_playSession) {
+                _playSession.reset();
+            }
         }
         ImGui::EndDisabled();
 
@@ -223,6 +260,7 @@ int EditorApplication::run() {
                         running = false;
                     }
 
+                    Uint64 previousFrameTime = SDL_GetTicksNS();
                     while (running) {
                         SDL_Event event{};
                         bool closeRequested = false;
@@ -249,6 +287,11 @@ int EditorApplication::run() {
                         if (!running) {
                             break;
                         }
+
+                        // Update time
+                        const Uint64 currentTime = SDL_GetTicksNS();
+                        float deltaSeconds = static_cast<float>(currentTime - previousFrameTime) / 1'000'000'000.0;
+                        previousFrameTime = currentTime;
 
                         ImGui_ImplSDLGPU3_NewFrame();
                         ImGui_ImplSDL3_NewFrame();
@@ -284,6 +327,7 @@ int EditorApplication::run() {
                             dockLayoutInitialized = true;
                         }
 
+                        ImGui::BeginDisabled(_playSession.get());
                         // Hierarchy
                         _hierarchy.draw(*_session, worldfReflectionContext);
 
@@ -292,13 +336,19 @@ int EditorApplication::run() {
 
                         // Content Browser
                         _contentBrowser.draw(_project);
+                        ImGui::EndDisabled();
 
                         // Console
                         _console.draw(log);
 
                         // Scene View
                         std::optional<editor::SceneViewportFrame> viewportFrame = std::nullopt;
-                        auto drawViewportResult = viewport.draw(*_session, worldfReflectionContext);
+                        engine::RenderFrameData frame{};
+                        if (_playSession.get()) {
+                            _playSession->update(deltaSeconds);
+                            _playSession->renderScene(frame);
+                        }
+                        auto drawViewportResult = viewport.draw(*_session, worldfReflectionContext, frame, _playSession.get());
                         if (!drawViewportResult) {
                             SDL_Log("%s", drawViewportResult.error().c_str());
                             returnCode = 1;
@@ -308,10 +358,10 @@ int EditorApplication::run() {
                         }
 
                         // editor
-                        if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Z, ImGuiInputFlags_RouteGlobal)) {
+                        if (!_playSession.get() && ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Z, ImGuiInputFlags_RouteGlobal)) {
                             _session->undo(worldfReflectionContext);
                         }
-                        if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Z, ImGuiInputFlags_RouteGlobal) || ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Y, ImGuiInputFlags_RouteGlobal)) {
+                        if (!_playSession.get() && (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Z, ImGuiInputFlags_RouteGlobal) || ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Y, ImGuiInputFlags_RouteGlobal))) {
                             _session->redo(worldfReflectionContext);
                         }
 

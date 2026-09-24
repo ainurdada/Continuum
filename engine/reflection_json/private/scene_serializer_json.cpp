@@ -142,7 +142,10 @@ std::expected<SceneEntityId, std::string> getEntitySceneId(ecs::Entity entity, s
     return std::unexpected("Entity does not have scene id");
 }
 
-std::expected<nlohmann::json, std::string> worldToJson(ecs::World& world, const engine::reflection::serialization::JsonSerializationRegistry& policies, engine::ecs_reflection::WorldReflectionContext& ctx) {
+} // namespace
+
+std::expected<nlohmann::json, std::string> SceneSerializerJson::worldToJson(ecs::World& world) {
+    engine::ecs_reflection::WorldReflectionContext ctx{world, _bindings};
     auto sceneEntities = getSceneEntities(world);
     if (!sceneEntities.has_value()) {
         return std::unexpected(sceneEntities.error());
@@ -162,7 +165,7 @@ std::expected<nlohmann::json, std::string> worldToJson(ecs::World& world, const 
     }
 
     for (const SceneEntity& sceneEntity : sceneEntities.value()) {
-        auto toJsonResult = reflectedComponentToJson(sceneEntity.entity, policies, ctx);
+        auto toJsonResult = reflectedComponentToJson(sceneEntity.entity, _policies, ctx);
         if (!toJsonResult) {
             return std::unexpected(toJsonResult.error());
         }
@@ -204,68 +207,9 @@ std::expected<nlohmann::json, std::string> worldToJson(ecs::World& world, const 
     return sceneJson;
 }
 
-} // namespace
-
-std::expected<void, std::string> SceneSerializerJson::serialize(ecs::World& world, std::filesystem::path sceneFile) {
-    if (sceneFile.extension() != ".cscn") {
-        return std::unexpected("not valid scene file format");
-    }
-
-    engine::ecs_reflection::WorldReflectionContext ctx{world, _bindings};
-    auto worldJson = worldToJson(world, _policies, ctx);
-    if (!worldJson.has_value()) {
-        return std::unexpected(worldJson.error());
-    }
-
-    std::string sceneString;
-    try {
-        sceneString = worldJson.value().dump(4);
-    } catch (const nlohmann::json::exception& exception) {
-        return std::unexpected(std::string{"failed to convert scene JSON to text: "} + exception.what());
-    }
-
-    std::ofstream sceneStream{sceneFile, std::ios::binary | std::ios::trunc};
-
-    if (!sceneStream.is_open()) {
-        return std::unexpected("could not open scene file for writing");
-    }
-
-    sceneStream << sceneString << '\n';
-    sceneStream.close();
-
-    if (sceneStream.fail()) {
-        return std::unexpected("could not write scene file");
-    }
-
-    return {};
-}
-
-std::expected<void, std::string> SceneSerializerJson::deserialize(ecs::World& world, std::filesystem::path sceneFile) {
+std::expected<void, std::string> SceneSerializerJson::jsonToWorld(ecs::World& world, const nlohmann::json& jsonScene) {
     // VALIDATION DATA BEGIN
 
-    std::error_code errorCode;
-    std::filesystem::path canonicalPath = std::filesystem::canonical(sceneFile, errorCode);
-    if (errorCode) {
-        return std::unexpected<std::string>("failed to get canonical path");
-    }
-    errorCode.clear();
-    bool isRegularFile = std::filesystem::is_regular_file(canonicalPath, errorCode);
-    if (errorCode) {
-        return std::unexpected<std::string>(errorCode.message());
-    }
-    if (!isRegularFile) {
-        return std::unexpected<std::string>("scene file is not regular file");
-    }
-    if (canonicalPath.extension() != ".cscn") {
-        return std::unexpected<std::string>("missing continuum scene extension");
-    }
-
-    std::ifstream sceneStream{canonicalPath};
-    if (!sceneStream.is_open()) {
-        return std::unexpected<std::string>("could not open scene file");
-    }
-
-    auto jsonScene = nlohmann::json::parse(sceneStream, nullptr, false);
     if (jsonScene.is_discarded()) {
         return std::unexpected<std::string>("not correct json file");
     }
@@ -378,6 +322,77 @@ std::expected<void, std::string> SceneSerializerJson::deserialize(ecs::World& wo
     }
 
     // SET WORLD END
+
+    return {};
+}
+
+std::expected<void, std::string> SceneSerializerJson::serialize(ecs::World& world, std::filesystem::path sceneFile) {
+    if (sceneFile.extension() != ".cscn") {
+        return std::unexpected("not valid scene file format");
+    }
+
+    engine::ecs_reflection::WorldReflectionContext ctx{world, _bindings};
+    auto worldJson = worldToJson(world);
+    if (!worldJson.has_value()) {
+        return std::unexpected(worldJson.error());
+    }
+
+    std::string sceneString;
+    try {
+        sceneString = worldJson.value().dump(4);
+    } catch (const nlohmann::json::exception& exception) {
+        return std::unexpected(std::string{"failed to convert scene JSON to text: "} + exception.what());
+    }
+
+    std::ofstream sceneStream{sceneFile, std::ios::binary | std::ios::trunc};
+
+    if (!sceneStream.is_open()) {
+        return std::unexpected("could not open scene file for writing");
+    }
+
+    sceneStream << sceneString << '\n';
+    sceneStream.close();
+
+    if (sceneStream.fail()) {
+        return std::unexpected("could not write scene file");
+    }
+
+    return {};
+}
+
+std::expected<void, std::string> SceneSerializerJson::deserialize(ecs::World& world, std::filesystem::path sceneFile) {
+    // VALIDATION DATA BEGIN
+
+    std::error_code errorCode;
+    std::filesystem::path canonicalPath = std::filesystem::canonical(sceneFile, errorCode);
+    if (errorCode) {
+        return std::unexpected<std::string>("failed to get canonical path");
+    }
+    errorCode.clear();
+    bool isRegularFile = std::filesystem::is_regular_file(canonicalPath, errorCode);
+    if (errorCode) {
+        return std::unexpected<std::string>(errorCode.message());
+    }
+    if (!isRegularFile) {
+        return std::unexpected<std::string>("scene file is not regular file");
+    }
+    if (canonicalPath.extension() != ".cscn") {
+        return std::unexpected<std::string>("missing continuum scene extension");
+    }
+
+    std::ifstream sceneStream{canonicalPath};
+    if (!sceneStream.is_open()) {
+        return std::unexpected<std::string>("could not open scene file");
+    }
+
+    // VALIDATION DATA END
+
+    auto jsonScene = nlohmann::json::parse(sceneStream, nullptr, false);
+
+    auto worldParsingResult = jsonToWorld(world, jsonScene);
+    if (!worldParsingResult) {
+        return std::unexpected(worldParsingResult.error());
+    }
 
     return {};
 }

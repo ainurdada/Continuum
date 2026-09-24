@@ -13,12 +13,12 @@
                 "engine::scene::Transform": {
                     "position": [
                         0.0,
-                        0.0,
-                        0.0
+                        1.5,
+                        -7.0
                     ],
                     "rotation": [
                         0.0,
-                        0.0,
+                        -0.0,
                         0.0
                     ],
                     "scale": [
