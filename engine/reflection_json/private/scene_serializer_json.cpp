@@ -23,6 +23,7 @@ struct ParsedEntity {
 struct SceneEntity {
     ecs::Entity entity;
     scene::SceneEntityId sceneId;
+    std::optional<ecs::Entity> parent = std::nullopt;
 };
 
 std::expected<void, std::string> loadReflectedComponent(ecs::World& world, ecs::Entity entity, std::string_view key, const nlohmann::json& componentJson, const engine::reflection::TypeRegistry& typeReg, const engine::reflection::serialization::JsonSerializationRegistry& policies,
@@ -109,6 +110,7 @@ std::expected<nlohmann::json, std::string> reflectedComponentToJson(ecs::Entity 
 
 std::expected<std::vector<SceneEntity>, std::string> getSceneEntities(ecs::World& world) {
     auto& sceneIdStash = world.getStash<scene::SceneEntityId>();
+    auto& parentStash = world.getStash<scene::Parent>();
     auto sceneIdQuery = world.query().with<scene::SceneEntityId>().build();
     std::unordered_set<std::uint64_t> visitedIds{};
     std::vector<SceneEntity> result{};
@@ -121,9 +123,23 @@ std::expected<std::vector<SceneEntity>, std::string> getSceneEntities(ecs::World
             return std::unexpected("not unique scene id");
         }
         result.push_back(SceneEntity{.entity = entity, .sceneId = sceneId});
+        Parent* parent = parentStash.getMut(entity);
+        if (parent) {
+            result.back().parent = parent->entity;
+        }
     }
     std::sort(result.begin(), result.end(), [](const SceneEntity& a, const SceneEntity& b) { return a.sceneId.value < b.sceneId.value; });
     return result;
+}
+
+std::expected<SceneEntityId, std::string> getEntitySceneId(ecs::Entity entity, std::vector<SceneEntity> sceneEntities) {
+    for (auto& sceneEntity : sceneEntities) {
+        if (sceneEntity.entity == entity) {
+            return sceneEntity.sceneId;
+        }
+    }
+
+    return std::unexpected("Entity does not have scene id");
 }
 
 std::expected<nlohmann::json, std::string> worldToJson(ecs::World& world, const engine::reflection::serialization::JsonSerializationRegistry& policies, engine::ecs_reflection::WorldReflectionContext& ctx) {
@@ -141,6 +157,10 @@ std::expected<nlohmann::json, std::string> worldToJson(ecs::World& world, const 
     std::unordered_set<std::uint64_t> entityIds;
     std::unordered_map<std::uint64_t, std::uint64_t> childParentMap;
 
+    auto parentQuery = world.query().with<Parent>().with<SceneEntityId>().build();
+    for (auto entity : parentQuery.view()) {
+    }
+
     for (const SceneEntity& sceneEntity : sceneEntities.value()) {
         auto toJsonResult = reflectedComponentToJson(sceneEntity.entity, policies, ctx);
         if (!toJsonResult) {
@@ -148,12 +168,39 @@ std::expected<nlohmann::json, std::string> worldToJson(ecs::World& world, const 
         }
         auto componentsJson = toJsonResult.value();
 
+        if (sceneEntity.parent) {
+            auto parentSceneId = getEntitySceneId(sceneEntity.parent.value(), sceneEntities.value());
+            if (!parentSceneId) {
+                return std::unexpected(parentSceneId.error());
+            }
+            auto parentJson = nlohmann::json::object();
+            parentJson["sceneId"] = parentSceneId->value;
+            componentsJson["engine::scene::Parent"] = parentJson;
+        }
+
         nlohmann::json entityJson = nlohmann::json::object();
         entityJson["id"] = sceneEntity.sceneId.value;
         entityJson["components"] = componentsJson;
 
         sceneJson["entities"].push_back(entityJson);
+
+        if (!entityIds.emplace(sceneEntity.sceneId.value).second) {
+            return std::unexpected("Failed to serialize scene: entities have not unique scene ids");
+        }
+        if (sceneEntity.parent) {
+            auto parentSceneid = getEntitySceneId(sceneEntity.parent.value(), sceneEntities.value());
+            if (!parentSceneid) {
+                return std::unexpected(parentSceneid.error());
+            }
+            childParentMap.emplace(sceneEntity.sceneId.value, parentSceneid->value);
+        }
     }
+
+    auto validationResult = validateParentLinks(entityIds, childParentMap);
+    if (!validationResult) {
+        return std::unexpected(validationResult.error());
+    }
+
     return sceneJson;
 }
 
@@ -276,8 +323,8 @@ std::expected<void, std::string> SceneSerializerJson::deserialize(ecs::World& wo
         ParsedEntity parsedEntity{.id = id.value(), .componentsJson = &entityComponentsJson};
 
         for (auto component : entityComponentsJson.items()) {
-            if (component.key() == "engine::scene::Parent" && component.value().contains("parent")) {
-                parsedEntity.parent = SceneEntityId{component.value().at("parent").get<std::uint64_t>()};
+            if (component.key() == "engine::scene::Parent" && component.value().contains("sceneId")) {
+                parsedEntity.parent = SceneEntityId{component.value().at("sceneId").get<std::uint64_t>()};
             }
         }
 

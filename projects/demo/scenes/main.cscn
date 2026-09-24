@@ -67,7 +67,7 @@
                     "value": "cube2"
                 },
                 "engine::scene::Parent": {
-                    "parent": 2
+                    "sceneId": 2
                 },
                 "engine::scene::Transform": {
                     "position": [
