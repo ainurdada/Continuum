@@ -49,6 +49,8 @@ class EditorApplication {
 
     void buildDefaultDockLayout(ImGuiID dockspaceId);
 
+    void scanProjectFiles();
+
   public:
     EditorApplication(Project project);
 

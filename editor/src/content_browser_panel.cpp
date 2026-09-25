@@ -3,13 +3,14 @@
 #include <algorithm>
 #include <vector>
 
+#include <SDL3/SDL_log.h>
 #include <imgui.h>
 
 #include <project.h>
 
 namespace editor {
 
-void ContentBrowserPanel::draw(const ContentBrowserDrawInfo& info) {
+void ContentBrowserPanel::draw(ContentBrowserDrawInfo& info) {
     auto& project = info.project;
 
     if (ImGui::Begin(CONTENT_BROWSER_WINDOW_NAME)) {
@@ -52,6 +53,15 @@ void ContentBrowserPanel::draw(const ContentBrowserDrawInfo& info) {
                 browserError += "\n" + directoryError.message();
             }
         }
+        ImGui::SameLine();
+        ImGui::BeginDisabled(!_selectedFile.has_value());
+        if (ImGui::Button("Move selected here")) {
+            auto moveresult = info.assetRegistry.moveAsset(_selectedFile.value(), _currentDirectory);
+            if (!moveresult) {
+                browserError += moveresult.error() + "\n";
+            }
+        }
+        ImGui::EndDisabled();
         ImGui::EndDisabled();
 
         while (!iterationError && it != end) {
@@ -121,7 +131,7 @@ void ContentBrowserPanel::draw(const ContentBrowserDrawInfo& info) {
         }
 
         if (!browserError.empty()) {
-            ImGui::TextWrapped("%s", browserError.c_str());
+            SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "%s", browserError.c_str());
         }
     }
     ImGui::End();

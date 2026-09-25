@@ -23,6 +23,19 @@ std::string generateAssetId() {
     return result;
 }
 
+std::expected<std::filesystem::path, std::string> getAbsolutePath(std::filesystem::path projectPath, std::filesystem::path p) {
+    std::filesystem::path assetsRootAbs = std::filesystem::weakly_canonical(projectPath / "assets");
+    std::filesystem::path targetAbs = std::filesystem::weakly_canonical(projectPath / p);
+
+    auto [mismatchIt1, mismatchIt2] = std::mismatch(assetsRootAbs.begin(), assetsRootAbs.end(), targetAbs.begin(), targetAbs.end());
+
+    if (mismatchIt1 != assetsRootAbs.end()) {
+        return std::unexpected("Path is outside of assets: " + targetAbs.generic_string());
+    }
+
+    return targetAbs;
+}
+
 } // namespace
 
 std::expected<void, std::string> AssetRegistry::registerAsset(const std::filesystem::path& file) {
@@ -123,6 +136,64 @@ std::expected<void, std::string> AssetRegistry::registerProjectFiles() {
     } catch (const std::exception& e) {
         return std::unexpected(std::string("Unexpected error: ") + e.what());
     }
+
+    return {};
+}
+
+std::expected<void, std::string> AssetRegistry::moveAsset(AssetID id, std::filesystem::path newPath) {
+    if (!_assets.contains(id)) {
+        return std::unexpected("missing asset info");
+    }
+
+    auto& assetInfo = _assets.at(id);
+
+    auto currentAssetPath = getAbsolutePath(_projectPath, assetInfo.path);
+    if (!currentAssetPath) {
+        return std::unexpected(currentAssetPath.error());
+    }
+    std::filesystem::path currentMetaPath = currentAssetPath->generic_string() + ".meta";
+
+    if (!std::filesystem::exists(currentAssetPath.value()) || !std::filesystem::exists(currentMetaPath)) {
+        return std::unexpected("missing asset files");
+    }
+
+    auto newPathAbs = getAbsolutePath(_projectPath, newPath);
+    if (!newPathAbs) {
+        return std::unexpected(newPathAbs.error());
+    }
+
+    if (!std::filesystem::is_directory(newPathAbs.value())) {
+        return std::unexpected("new path is not directories");
+    }
+
+    auto targetAssetPath = newPathAbs.value() / currentAssetPath->filename();
+    std::filesystem::path targetMetaPath = targetAssetPath.generic_string() + ".meta";
+
+    if (std::filesystem::exists(targetAssetPath) || std::filesystem::exists(targetMetaPath)) {
+        return std::unexpected("File already exists in " + newPathAbs->generic_string());
+    }
+
+    std::error_code ec;
+    auto newRelativePath = std::filesystem::relative(targetAssetPath, _projectPath, ec);
+    if (ec) {
+        return std::unexpected(ec.message());
+    }
+
+    std::filesystem::rename(currentMetaPath, targetMetaPath, ec);
+    if (ec) {
+        return std::unexpected("failed to move meta file: " + ec.message());
+    }
+    std::filesystem::rename(currentAssetPath.value(), targetAssetPath, ec);
+    if (ec) {
+        std::error_code ec2;
+        std::filesystem::rename(targetMetaPath, currentMetaPath, ec2);
+        if (ec2) {
+            return std::unexpected("failed to move asset file: " + ec.message() + "\nFailed to move meta file back: " + ec2.message());
+        }
+        return std::unexpected("failed to move asset file: " + ec.message());
+    }
+
+    assetInfo.path = newRelativePath;
 
     return {};
 }

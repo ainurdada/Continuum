@@ -13,7 +13,7 @@ struct Project;
 
 struct ContentBrowserDrawInfo {
     const Project& project;
-    const engine::asset::AssetRegistry& assetRegistry;
+    engine::asset::AssetRegistry& assetRegistry;
 };
 
 class ContentBrowserPanel {
@@ -26,7 +26,7 @@ class ContentBrowserPanel {
 
     /// @brief Draw content of current directory
     /// @param project Project info
-    void draw(const ContentBrowserDrawInfo& info);
+    void draw(ContentBrowserDrawInfo& info);
 };
 
 } // namespace editor

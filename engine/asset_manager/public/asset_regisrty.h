@@ -27,6 +27,8 @@ class AssetRegistry {
     std::optional<AssetInfo> getAsset(const std::filesystem::path& path) const;
 
     std::expected<void, std::string> registerProjectFiles();
+
+    std::expected<void, std::string> moveAsset(AssetID id, std::filesystem::path newPath);
 };
 
 } // namespace engine::asset

@@ -59,6 +59,9 @@ void EditorApplication::drawMainMenuBar(engine::ecs_reflection::WorldReflectionC
             if (ImGui::MenuItem("Save scene", nullptr, false, _session->document().isDirty())) {
                 trySaveScene(ctx);
             }
+            if (ImGui::MenuItem("Refresh assets", nullptr, false)) {
+                scanProjectFiles();
+            }
 
             ImGui::EndDisabled();
             ImGui::EndMenu();
@@ -147,6 +150,17 @@ void EditorApplication::buildDefaultDockLayout(ImGuiID dockspaceId) {
     ImGui::DockBuilderFinish(dockspaceId);
 }
 
+void EditorApplication::scanProjectFiles() {
+    engine::asset::AssetRegistry reg(_project.projectRoot);
+    auto assetScanResult = reg.registerProjectFiles();
+    if (assetScanResult) {
+        _assetRegistry = reg;
+        SDL_Log("Assets was loaded");
+    } else {
+        SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Failed to scan assets: %s", assetScanResult.error().c_str());
+    }
+}
+
 int EditorApplication::run() {
     if (!engine::reflection::serialization::registerBuiltinJsonPolicies(_jsonSerializationRegistry)) {
         std::cerr << "Failed to register builtin json policy" << std::endl;
@@ -230,12 +244,7 @@ int EditorApplication::run() {
         editor::ConsoleLog log{};
 
         // scan project assets
-        auto assetScanResult = _assetRegistry.registerProjectFiles();
-        if (assetScanResult) {
-            SDL_Log("Assets was loaded");
-        } else {
-            SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Failed to scan assets: %s", assetScanResult.error().c_str());
-        }
+        scanProjectFiles();
 
         auto graphicsContext = engine::graphics::GraphicsContext::create(window);
         if (graphicsContext) {
@@ -343,7 +352,7 @@ int EditorApplication::run() {
                         _inspector.draw(*_session, worldfReflectionContext, _componentDrawers);
 
                         // Content Browser
-                        ContentBrowserDrawInfo contentBrowserDrawInfo {
+                        ContentBrowserDrawInfo contentBrowserDrawInfo{
                             .project = _project,
                             .assetRegistry = _assetRegistry,
                         };
