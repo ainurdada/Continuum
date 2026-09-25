@@ -23,7 +23,8 @@ class AssetRegistry {
     AssetRegistry(const std::filesystem::path& projectPath) : _projectPath(projectPath) {}
 
     std::expected<void, std::string> registerAsset(const std::filesystem::path& file);
-    std::optional<AssetInfo> getAsset(const AssetID& id);
+    std::optional<AssetInfo> getAsset(const AssetID& id) const;
+    std::optional<AssetInfo> getAsset(const std::filesystem::path& path) const;
 
     std::expected<void, std::string> registerProjectFiles();
 };

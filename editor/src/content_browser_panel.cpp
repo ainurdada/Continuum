@@ -9,7 +9,9 @@
 
 namespace editor {
 
-void ContentBrowserPanel::draw(const Project& project) {
+void ContentBrowserPanel::draw(const ContentBrowserDrawInfo& info) {
+    auto& project = info.project;
+
     if (ImGui::Begin(CONTENT_BROWSER_WINDOW_NAME)) {
         std::string browserError{};
         std::vector<std::filesystem::path> directories{};
@@ -101,8 +103,20 @@ void ContentBrowserPanel::draw(const Project& project) {
             }
         }
         for (auto file : files) {
+            std::error_code ec;
+            auto relativePath = std::filesystem::relative(file, project.projectRoot, ec);
+            if (ec) {
+                browserError += ec.message() + "\n";
+                continue;
+            }
+            auto fileInfo = info.assetRegistry.getAsset(relativePath);
+            if (!fileInfo) {
+                continue;
+            }
             std::string fileLabel = "[F] " + file.filename().string();
-            if (ImGui::Selectable(fileLabel.c_str())) {
+            bool selected = _selectedFile.has_value() ? fileInfo->desc.id == _selectedFile.value() : false;
+            if (ImGui::Selectable(fileLabel.c_str(), selected)) {
+                _selectedFile = fileInfo->desc.id;
             }
         }
 

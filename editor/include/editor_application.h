@@ -11,19 +11,22 @@
 #include <editor_session.h>
 #include <hierarchy_panel.h>
 #include <inspector_panel.h>
+#include <play_session.h>
 #include <project.h>
 #include <scene_document.h>
 #include <ui/component_drawer_registry.h>
-#include <play_session.h>
 
+#include <asset_manager/public/asset_regisrty.h>
 #include <ecs_reflection/public/component_binding_registry.h>
-#include <reflection_json/public/json_serialization_registry.h>
 #include <reflection/public/type_registry.h>
+#include <reflection_json/public/json_serialization_registry.h>
 
 namespace editor {
 
 class EditorApplication {
     Project _project;
+
+    engine::asset::AssetRegistry _assetRegistry;
 
     engine::reflection::TypeRegistry _typeRegistry;
     engine::ecs_reflection::ComponentBindingRegistry _componentBindings;

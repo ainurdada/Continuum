@@ -32,7 +32,7 @@
 
 namespace editor {
 
-EditorApplication::EditorApplication(Project project) : _project(std::move(project)), _contentBrowser(_project.projectRoot) {}
+EditorApplication::EditorApplication(Project project) : _project(std::move(project)), _assetRegistry(_project.projectRoot), _contentBrowser(_project.projectRoot) {}
 
 bool EditorApplication::trySaveScene(engine::ecs_reflection::WorldReflectionContext& ctx) {
     auto finishEditResult = _session->finishActiveComponentEdit(ctx);
@@ -229,6 +229,14 @@ int EditorApplication::run() {
         // init console log
         editor::ConsoleLog log{};
 
+        // scan project assets
+        auto assetScanResult = _assetRegistry.registerProjectFiles();
+        if (assetScanResult) {
+            SDL_Log("Assets was loaded");
+        } else {
+            SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Failed to scan assets: %s", assetScanResult.error().c_str());
+        }
+
         auto graphicsContext = engine::graphics::GraphicsContext::create(window);
         if (graphicsContext) {
 
@@ -335,7 +343,11 @@ int EditorApplication::run() {
                         _inspector.draw(*_session, worldfReflectionContext, _componentDrawers);
 
                         // Content Browser
-                        _contentBrowser.draw(_project);
+                        ContentBrowserDrawInfo contentBrowserDrawInfo {
+                            .project = _project,
+                            .assetRegistry = _assetRegistry,
+                        };
+                        _contentBrowser.draw(contentBrowserDrawInfo);
                         ImGui::EndDisabled();
 
                         // Console

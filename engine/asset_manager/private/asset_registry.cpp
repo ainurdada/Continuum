@@ -63,12 +63,22 @@ std::expected<void, std::string> AssetRegistry::registerAsset(const std::filesys
     return {};
 }
 
-std::optional<AssetInfo> AssetRegistry::getAsset(const AssetID& id) {
+std::optional<AssetInfo> AssetRegistry::getAsset(const AssetID& id) const {
     if (!_assets.contains(id)) {
         return std::nullopt;
     }
 
     return _assets.at(id);
+}
+
+std::optional<AssetInfo> AssetRegistry::getAsset(const std::filesystem::path& path) const {
+    for (auto& [k, v] : _assets) {
+        if (v.path == path) {
+            return v;
+        }
+    }
+
+    return std::nullopt;
 }
 
 std::expected<void, std::string> AssetRegistry::registerProjectFiles() {
