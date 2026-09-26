@@ -14,3 +14,9 @@ target_link_libraries(
     nlohmann_json::nlohmann_json
     assimp::assimp
 )
+
+target_link_libraries(
+    ContinuumEngine_AssetManager
+    PUBLIC
+    ContinuumEngine_Render
+)

@@ -7,6 +7,7 @@
 #include <imgui_impl_sdlgpu3.h>
 #include <imgui_internal.h>
 
+#include <asset_manager/public/asset_importer.h>
 #include <ecs_reflection/public/ecs_reflection_bootstrap.h>
 #include <ecs_reflection/public/world_reflection_context.h>
 #include <edit_snapshot_policy.h>
@@ -18,7 +19,6 @@
 #include <scene/public/camera.h>
 #include <scene/public/name.h>
 #include <scene/public/transform.h>
-#include <asset_manager/public/asset_importer.h>
 
 #include <console_log.h>
 #include <scene_viewport.h>
@@ -248,11 +248,11 @@ int EditorApplication::run() {
         scanProjectFiles();
 
         // TEMP
-        auto meshCount = engine::asset::import::getMeshCount(_project.projectRoot / "assets/sponza/sponza.obj");
-        if (meshCount.has_value()) {
-            SDL_Log("sponza has %u meshes", meshCount.value());
+        auto meshes = engine::asset::import::loadMeshes(_project.projectRoot / "assets/sponza/sponza.obj");
+        if (meshes.has_value()) {
+            SDL_Log("sponza has %zu meshes", meshes->size());
         } else {
-            SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Failed to count sponza meshes: %s", meshCount.error().c_str());
+            SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Failed to load sponza meshes: %s", meshes.error().c_str());
         }
 
         auto graphicsContext = engine::graphics::GraphicsContext::create(window);
