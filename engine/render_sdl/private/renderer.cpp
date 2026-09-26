@@ -1,8 +1,8 @@
 #include "renderer.h"
 
-#include <sdl_support/public/validation.h>
 #include "shader.h"
 #include <math/public/g_math.h>
+#include <sdl_support/public/validation.h>
 
 namespace engine::graphics {
 
@@ -42,7 +42,7 @@ static_assert(sizeof(TransformUniform) == 192);
 MeshData createGlobalGridMeshData(int halfCellCount, float spacingMeters) {
     MeshData grid{};
     for (int i = -halfCellCount; i <= halfCellCount; i++) {
-        std::uint16_t currentIndex = static_cast<uint16_t>(grid.positionVertices.size());
+        std::uint32_t currentIndex = static_cast<std::uint32_t>(grid.positionVertices.size());
         grid.positionVertices.push_back(PositionVertex{-halfCellCount * spacingMeters, 0, i * spacingMeters});
         grid.positionVertices.push_back(PositionVertex{halfCellCount * spacingMeters, 0, i * spacingMeters});
         grid.positionVertices.push_back(PositionVertex{i * spacingMeters, 0, -halfCellCount * spacingMeters});
@@ -270,7 +270,7 @@ bool Renderer::recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUText
             SDL_GPUBufferBinding indexBufferBinding{};
             indexBufferBinding.buffer = _cubeMesh.indexBufferHandle();
             indexBufferBinding.offset = 0;
-            SDL_BindGPUIndexBuffer(renderPass, &indexBufferBinding, SDL_GPU_INDEXELEMENTSIZE_16BIT);
+            SDL_BindGPUIndexBuffer(renderPass, &indexBufferBinding, SDL_GPU_INDEXELEMENTSIZE_32BIT);
 
             indexCount = _cubeMesh.indexCount();
             break;
@@ -295,7 +295,7 @@ bool Renderer::recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUText
         SDL_GPUBufferBinding indexBufferBinding{};
         indexBufferBinding.buffer = _gridMesh.indexBufferHandle();
         indexBufferBinding.offset = 0;
-        SDL_BindGPUIndexBuffer(renderPass, &indexBufferBinding, SDL_GPU_INDEXELEMENTSIZE_16BIT);
+        SDL_BindGPUIndexBuffer(renderPass, &indexBufferBinding, SDL_GPU_INDEXELEMENTSIZE_32BIT);
         // Draw
         SDL_DrawGPUIndexedPrimitives(renderPass, _gridMesh.indexCount(), 1, 0, 0, 0);
     }

@@ -11,6 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(cmake/EngineDependencies.cmake)
+include(cmake/AssimpDependencies.cmake)
 include(cmake/EditorDependencies.cmake)
 include(cmake/ModuleHelper.cmake)
 include(cmake/ContinuumRuntime.cmake)

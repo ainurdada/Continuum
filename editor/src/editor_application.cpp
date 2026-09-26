@@ -18,6 +18,7 @@
 #include <scene/public/camera.h>
 #include <scene/public/name.h>
 #include <scene/public/transform.h>
+#include <asset_manager/public/asset_importer.h>
 
 #include <console_log.h>
 #include <scene_viewport.h>
@@ -245,6 +246,14 @@ int EditorApplication::run() {
 
         // scan project assets
         scanProjectFiles();
+
+        // TEMP
+        auto meshCount = engine::asset::import::getMeshCount(_project.projectRoot / "assets/sponza/sponza.obj");
+        if (meshCount.has_value()) {
+            SDL_Log("sponza has %u meshes", meshCount.value());
+        } else {
+            SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Failed to count sponza meshes: %s", meshCount.error().c_str());
+        }
 
         auto graphicsContext = engine::graphics::GraphicsContext::create(window);
         if (graphicsContext) {

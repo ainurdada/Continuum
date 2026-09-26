@@ -13,14 +13,14 @@ struct PositionVertex {
 
 struct MeshData {
     std::vector<PositionVertex> positionVertices{};
-    std::vector<std::uint16_t> indices{};
+    std::vector<std::uint32_t> indices{};
 
     inline std::size_t positionVertexBytes() const {
         return positionVertices.size() * sizeof(PositionVertex);
     }
 
     inline std::size_t indexBytes() const {
-        return indices.size() * sizeof(std::uint16_t);
+        return indices.size() * sizeof(std::uint32_t);
     }
 };
 
