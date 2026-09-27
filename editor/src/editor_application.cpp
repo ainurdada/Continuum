@@ -249,17 +249,24 @@ int EditorApplication::run() {
         scanProjectFiles();
 
         // TEMP
+        std::optional<std::vector<engine::graphics::MeshData>> sponzaMeshes = std::nullopt;
         std::string sponzaPath = "assets/sponza/sponza.obj";
         auto sponzaInfo = _assetRegistry.getAsset(sponzaPath);
         if (sponzaInfo) {
-            auto meshes = engine::asset::import::loadMeshes(_project.projectRoot / sponzaPath);
-            if (meshes.has_value()) {
-                auto sponzaCacheResult = engine::asset::cache::writeMeshCache(_project.projectRoot / "cache/models" / (sponzaInfo->desc.id.value + ".json"), meshes.value());
-                if (!sponzaCacheResult) {
-                    SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Failed to write sponza cache: %s", sponzaCacheResult.error().c_str());
+            auto meshes = engine::asset::cache::readMeshCache(_project.projectRoot / "cache/models" / (sponzaInfo->desc.id.value + ".json"));
+            if (!meshes) {
+                meshes = engine::asset::import::loadMeshes(_project.projectRoot / sponzaPath);
+                if (meshes) {
+                    auto sponzaCacheResult = engine::asset::cache::writeMeshCache(_project.projectRoot / "cache/models" / (sponzaInfo->desc.id.value + ".json"), meshes.value());
+                    if (!sponzaCacheResult) {
+                        SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Failed to write sponza cache: %s", sponzaCacheResult.error().c_str());
+                    }
                 }
-            } else {
+            }
+            if (!meshes) {
                 SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Failed to load sponza meshes: %s", meshes.error().c_str());
+            } else {
+                sponzaMeshes = meshes.value();
             }
         } else {
             SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Failed to get sponza info");
