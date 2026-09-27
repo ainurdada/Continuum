@@ -21,4 +21,7 @@ target_link_libraries(
     ContinuumEngine_AssetManager
     PUBLIC
     ContinuumEngine_Render
+    ContinuumEngine_Reflection
 )
+
+continuum_enable_reflection(ContinuumEngine_AssetManager MODULE "AssetManager" ROOTS "${CMAKE_CURRENT_SOURCE_DIR}/public")

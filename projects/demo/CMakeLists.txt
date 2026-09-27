@@ -45,6 +45,7 @@ continuum_link_modules(
     ContinuumEngine
     ContinuumEngine_Scene
     ContinuumEngine_RuntimeSdl
+    ContinuumEngine_AssetManager
 )
 
 continuum_finalize_reflection(ContinuumDemo)

@@ -9,6 +9,7 @@
 
 #include <scene/public/transform.h>
 #include <scene/public/mesh_renderer.h>
+#include <asset_manager/public/asset.h>
 
 namespace engine::reflection::serialization {
 
@@ -47,6 +48,11 @@ struct TransformJsonPolicy {
 struct MeshRendererJsonPolicy {
     static std::expected<nlohmann::json, std::string> serialize(const engine::scene::MeshRenderer& value);
     static std::expected<void, std::string> deserialize(const nlohmann::json& json, engine::scene::MeshRenderer& value);
+};
+
+struct AssetIdJsonPolicy {
+    static std::expected<nlohmann::json, std::string> serialize(const engine::asset::AssetID& value);
+    static std::expected<void, std::string> deserialize(const nlohmann::json& json, engine::asset::AssetID& value);
 };
 
 } // namespace engine::reflection::serialization

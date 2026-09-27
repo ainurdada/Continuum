@@ -11,10 +11,11 @@ set_module_defaults(ContinuumEngine_ReflectionJson STATIC)
 
 target_link_libraries(
     ContinuumEngine_ReflectionJson
-    
+
     PUBLIC
     ContinuumEngine_Reflection
     ContinuumEngine_Scene
+    ContinuumEngine_AssetManager
     nlohmann_json::nlohmann_json
 
     PRIVATE

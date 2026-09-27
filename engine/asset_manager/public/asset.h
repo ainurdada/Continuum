@@ -1,11 +1,14 @@
 #pragma once
 
-#include <string>
-#include <filesystem>
 #include <expected>
+#include <filesystem>
+#include <string>
+
+#include <reflection/public/markers.h>
 
 namespace engine::asset {
 
+OBJECT()
 struct AssetID {
     std::string value;
 

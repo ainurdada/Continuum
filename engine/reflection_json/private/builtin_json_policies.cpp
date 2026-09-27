@@ -33,6 +33,10 @@ bool registerBuiltinJsonPolicies(JsonSerializationRegistry& reg) {
         return false;
     }
 
+    if (!reg.findPolicy(typeid(engine::asset::AssetID)) && !reg.registerPolicy<engine::asset::AssetID, AssetIdJsonPolicy>()) {
+        return false;
+    }
+
     return true;
 }
 
@@ -223,6 +227,26 @@ std::expected<void, std::string> MeshRendererJsonPolicy::deserialize(const nlohm
     } else {
         return std::unexpected("Not supported geometry id");
     }
+}
+
+std::expected<nlohmann::json, std::string> AssetIdJsonPolicy::serialize(const engine::asset::AssetID& value) {
+    nlohmann::json json = nlohmann::json::object();
+    json["value"] = value.value;
+    return json;
+}
+
+std::expected<void, std::string> AssetIdJsonPolicy::deserialize(const nlohmann::json& json, engine::asset::AssetID& value) {
+    if (!json.is_object()) {
+        return std::unexpected("assetId json is not object");
+    }
+
+    if (!json.contains("value") || !json.at("value").is_string()) {
+        return std::unexpected("assetId value is not correct");
+    }
+
+    value = engine::asset::AssetID{.value = json.at("value").get<std::string>()};
+
+    return {};
 }
 
 } // namespace engine::reflection::serialization
