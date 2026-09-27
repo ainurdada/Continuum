@@ -7,6 +7,7 @@
 #include <imgui_impl_sdlgpu3.h>
 #include <imgui_internal.h>
 
+#include <asset_manager/public/asset_cache.h>
 #include <asset_manager/public/asset_importer.h>
 #include <ecs_reflection/public/ecs_reflection_bootstrap.h>
 #include <ecs_reflection/public/world_reflection_context.h>
@@ -248,11 +249,20 @@ int EditorApplication::run() {
         scanProjectFiles();
 
         // TEMP
-        auto meshes = engine::asset::import::loadMeshes(_project.projectRoot / "assets/sponza/sponza.obj");
-        if (meshes.has_value()) {
-            SDL_Log("sponza has %zu meshes", meshes->size());
+        std::string sponzaPath = "assets/sponza/sponza.obj";
+        auto sponzaInfo = _assetRegistry.getAsset(sponzaPath);
+        if (sponzaInfo) {
+            auto meshes = engine::asset::import::loadMeshes(_project.projectRoot / sponzaPath);
+            if (meshes.has_value()) {
+                auto sponzaCacheResult = engine::asset::cache::writeMeshCache(_project.projectRoot / "cache/models" / (sponzaInfo->desc.id.value + ".json"), meshes.value());
+                if (!sponzaCacheResult) {
+                    SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Failed to write sponza cache: %s", sponzaCacheResult.error().c_str());
+                }
+            } else {
+                SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Failed to load sponza meshes: %s", meshes.error().c_str());
+            }
         } else {
-            SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Failed to load sponza meshes: %s", meshes.error().c_str());
+            SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Failed to get sponza info");
         }
 
         auto graphicsContext = engine::graphics::GraphicsContext::create(window);
