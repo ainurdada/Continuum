@@ -1,7 +1,10 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 #include <string>
+
+#include <asset_manager/public/asset.h>
 
 #include <asset_manager/public/asset_regisrty.h>
 
@@ -16,6 +19,10 @@ struct ContentBrowserDrawInfo {
     engine::asset::AssetRegistry& assetRegistry;
 };
 
+struct ContentBrowserDrawResult {
+    std::optional<engine::asset::AssetID> reimportAssetId = std::nullopt;
+};
+
 class ContentBrowserPanel {
   private:
     std::filesystem::path _currentDirectory;
@@ -26,7 +33,7 @@ class ContentBrowserPanel {
 
     /// @brief Draw content of current directory
     /// @param project Project info
-    void draw(ContentBrowserDrawInfo& info);
+    ContentBrowserDrawResult draw(ContentBrowserDrawInfo& info);
 };
 
 } // namespace editor

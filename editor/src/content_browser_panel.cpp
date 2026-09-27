@@ -10,7 +10,9 @@
 
 namespace editor {
 
-void ContentBrowserPanel::draw(ContentBrowserDrawInfo& info) {
+ContentBrowserDrawResult ContentBrowserPanel::draw(ContentBrowserDrawInfo& info) {
+    ContentBrowserDrawResult result{};
+
     auto& project = info.project;
 
     if (ImGui::Begin(CONTENT_BROWSER_WINDOW_NAME)) {
@@ -53,16 +55,23 @@ void ContentBrowserPanel::draw(ContentBrowserDrawInfo& info) {
                 browserError += "\n" + directoryError.message();
             }
         }
-        ImGui::SameLine();
-        ImGui::BeginDisabled(!_selectedFile.has_value());
-        if (ImGui::Button("Move selected here")) {
-            auto moveresult = info.assetRegistry.moveAsset(_selectedFile.value(), _currentDirectory);
-            if (!moveresult) {
-                browserError += moveresult.error() + "\n";
+
+        ImGui::EndDisabled();
+
+        if (_selectedFile) {
+            ImGui::SameLine();
+            if (ImGui::Button("Move selected here")) {
+                auto moveresult = info.assetRegistry.moveAsset(_selectedFile.value(), _currentDirectory);
+                if (!moveresult) {
+                    browserError += moveresult.error() + "\n";
+                }
+            }
+
+            ImGui::SameLine();
+            if (ImGui::Button("Reimport")) {
+                result.reimportAssetId = _selectedFile.value();
             }
         }
-        ImGui::EndDisabled();
-        ImGui::EndDisabled();
 
         while (!iterationError && it != end) {
             const std::filesystem::directory_entry& entry = *it;
@@ -135,6 +144,8 @@ void ContentBrowserPanel::draw(ContentBrowserDrawInfo& info) {
         }
     }
     ImGui::End();
+
+    return result;
 }
 
 } // namespace editor

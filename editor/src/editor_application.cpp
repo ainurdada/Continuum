@@ -249,14 +249,6 @@ int EditorApplication::run() {
         // scan project assets
         scanProjectFiles();
 
-        // TEMP
-        auto sponzaModel = engine::asset::loadModel(_project.projectRoot, _assetRegistry, engine::asset::AssetID{.value = "6bb60a0a10702dd7061fc354e124acc5"});
-        if (!sponzaModel) {
-            SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Failed to load sponza model: %s", sponzaModel.error().c_str());
-        } else if (sponzaModel->cacheWarning) {
-            SDL_LogWarn(SDL_LogCategory::SDL_LOG_CATEGORY_APPLICATION, "%s", sponzaModel->cacheWarning->c_str());
-        }
-
         auto graphicsContext = engine::graphics::GraphicsContext::create(window);
         if (graphicsContext) {
 
@@ -367,7 +359,16 @@ int EditorApplication::run() {
                             .project = _project,
                             .assetRegistry = _assetRegistry,
                         };
-                        _contentBrowser.draw(contentBrowserDrawInfo);
+                        auto contentBrowserDrawResutl = _contentBrowser.draw(contentBrowserDrawInfo);
+                        if (contentBrowserDrawResutl.reimportAssetId) {
+                            auto model = engine::asset::loadModel(_project.projectRoot, _assetRegistry, contentBrowserDrawResutl.reimportAssetId.value(), true);
+                            if (!model) {
+                                SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "%s", model.error().c_str());
+                            } else if (model->cacheWarning) {
+                                SDL_LogWarn(SDL_LogCategory::SDL_LOG_CATEGORY_APPLICATION, "%s", model->cacheWarning->c_str());
+                            }
+                        }
+
                         ImGui::EndDisabled();
 
                         // Console
