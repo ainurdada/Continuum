@@ -26,5 +26,4 @@ std::expected<AssetDescription, std::string> readMetaFile(std::filesystem::path 
 std::expected<AssetDescription, std::string> getDescription(std::filesystem::path assetFile);
 bool hasMetaFile(std::filesystem::path assetFile);
 
-
 } // namespace engine::asset

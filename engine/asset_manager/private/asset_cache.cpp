@@ -15,6 +15,25 @@ bool validateformatVersion(const nlohmann::json& json) {
 }
 } // namespace
 
+bool isCacheUpToDate(std::filesystem::path originFile, std::filesystem::path cacheFile) {
+    std::error_code ec;
+    auto originFileLastWrite = std::filesystem::last_write_time(originFile, ec);
+    if (ec) {
+        return false;
+    }
+
+    auto cahceFileLastWrite = std::filesystem::last_write_time(cacheFile, ec);
+    if (ec) {
+        return false;
+    }
+
+    if (originFileLastWrite <= cahceFileLastWrite) {
+        return true;
+    }
+
+    return false;
+}
+
 std::expected<void, std::string> writeMeshCache(std::filesystem::path cachePath, const std::vector<graphics::MeshData>& meshes) {
     nlohmann::json json = nlohmann::json::object();
     json["formatVersion"] = 1;

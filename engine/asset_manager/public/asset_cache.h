@@ -9,6 +9,8 @@
 
 namespace engine::asset::cache {
 
+bool isCacheUpToDate(std::filesystem::path originFile, std::filesystem::path cacheFile);
+
 std::expected<void, std::string> writeMeshCache(std::filesystem::path cachePath, const std::vector<graphics::MeshData>& meshes);
 std::expected<std::vector<graphics::MeshData>, std::string> readMeshCache(std::filesystem::path cachePath);
 

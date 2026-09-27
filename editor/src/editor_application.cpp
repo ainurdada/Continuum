@@ -9,6 +9,7 @@
 
 #include <asset_manager/public/asset_cache.h>
 #include <asset_manager/public/asset_importer.h>
+#include <asset_manager/public/asset_loader.h>
 #include <ecs_reflection/public/ecs_reflection_bootstrap.h>
 #include <ecs_reflection/public/world_reflection_context.h>
 #include <edit_snapshot_policy.h>
@@ -249,27 +250,11 @@ int EditorApplication::run() {
         scanProjectFiles();
 
         // TEMP
-        std::optional<std::vector<engine::graphics::MeshData>> sponzaMeshes = std::nullopt;
-        std::string sponzaPath = "assets/sponza/sponza.obj";
-        auto sponzaInfo = _assetRegistry.getAsset(sponzaPath);
-        if (sponzaInfo) {
-            auto meshes = engine::asset::cache::readMeshCache(_project.projectRoot / "cache/models" / (sponzaInfo->desc.id.value + ".json"));
-            if (!meshes) {
-                meshes = engine::asset::import::loadMeshes(_project.projectRoot / sponzaPath);
-                if (meshes) {
-                    auto sponzaCacheResult = engine::asset::cache::writeMeshCache(_project.projectRoot / "cache/models" / (sponzaInfo->desc.id.value + ".json"), meshes.value());
-                    if (!sponzaCacheResult) {
-                        SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Failed to write sponza cache: %s", sponzaCacheResult.error().c_str());
-                    }
-                }
-            }
-            if (!meshes) {
-                SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Failed to load sponza meshes: %s", meshes.error().c_str());
-            } else {
-                sponzaMeshes = meshes.value();
-            }
-        } else {
-            SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Failed to get sponza info");
+        auto sponzaModel = engine::asset::loadModel(_project.projectRoot, _assetRegistry, engine::asset::AssetID{.value = "6bb60a0a10702dd7061fc354e124acc5"});
+        if (!sponzaModel) {
+            SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Failed to load sponza model: %s", sponzaModel.error().c_str());
+        } else if (sponzaModel->cacheWarning) {
+            SDL_LogWarn(SDL_LogCategory::SDL_LOG_CATEGORY_APPLICATION, "%s", sponzaModel->cacheWarning->c_str());
         }
 
         auto graphicsContext = engine::graphics::GraphicsContext::create(window);

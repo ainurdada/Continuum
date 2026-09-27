@@ -5,6 +5,7 @@ add_library(
     private/asset_registry.cpp
     private/asset_importer.cpp
     private/asset_cache.cpp
+    private/asset_loader.cpp
 )
 
 set_module_defaults(ContinuumEngine_AssetManager STATIC)
