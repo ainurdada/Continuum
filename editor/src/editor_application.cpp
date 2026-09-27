@@ -19,6 +19,7 @@
 #include <render_sdl/public/graphics_context.h>
 #include <render_sdl/public/renderer.h>
 #include <scene/public/camera.h>
+#include <scene/public/mesh_reference.h>
 #include <scene/public/name.h>
 #include <scene/public/transform.h>
 
@@ -366,6 +367,23 @@ int EditorApplication::run() {
                                 SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "%s", model.error().c_str());
                             } else if (model->cacheWarning) {
                                 SDL_LogWarn(SDL_LogCategory::SDL_LOG_CATEGORY_APPLICATION, "%s", model->cacheWarning->c_str());
+                            }
+                        }
+                        if (contentBrowserDrawResutl.assignModelAssetId && _session->selectedEntity()) {
+                            auto assetInfo = _assetRegistry.getAsset(contentBrowserDrawResutl.assignModelAssetId.value());
+                            auto entity = _session->selectedEntity().value();
+                            auto& world = _session->documentMut().worldMut();
+                            if (assetInfo && world.hasEntity(entity)) {
+                                auto& meshes = world.getStash<engine::scene::MeshReference>();
+                                if (meshes.has(entity)) {
+                                    if (meshes.get(entity)->modelId != assetInfo->desc.id) {
+                                        meshes.getMut(entity)->modelId = assetInfo->desc.id;
+                                        _session->documentMut().markDirty();
+                                    }
+                                } else {
+                                    meshes.add(entity, engine::scene::MeshReference{.modelId = assetInfo->desc.id});
+                                    _session->documentMut().markDirty();
+                                }
                             }
                         }
 

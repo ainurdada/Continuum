@@ -58,10 +58,10 @@ ContentBrowserDrawResult ContentBrowserPanel::draw(ContentBrowserDrawInfo& info)
 
         ImGui::EndDisabled();
 
-        if (_selectedFile) {
+        if (_selectedAssetId) {
             ImGui::SameLine();
             if (ImGui::Button("Move selected here")) {
-                auto moveresult = info.assetRegistry.moveAsset(_selectedFile.value(), _currentDirectory);
+                auto moveresult = info.assetRegistry.moveAsset(_selectedAssetId.value(), _currentDirectory);
                 if (!moveresult) {
                     browserError += moveresult.error() + "\n";
                 }
@@ -69,7 +69,12 @@ ContentBrowserDrawResult ContentBrowserPanel::draw(ContentBrowserDrawInfo& info)
 
             ImGui::SameLine();
             if (ImGui::Button("Reimport")) {
-                result.reimportAssetId = _selectedFile.value();
+                result.reimportAssetId = _selectedAssetId.value();
+            }
+
+            ImGui::SameLine();
+            if (ImGui::Button("Assign to selected entity")) {
+                result.assignModelAssetId = _selectedAssetId.value();
             }
         }
 
@@ -133,9 +138,9 @@ ContentBrowserDrawResult ContentBrowserPanel::draw(ContentBrowserDrawInfo& info)
                 continue;
             }
             std::string fileLabel = "[F] " + file.filename().string();
-            bool selected = _selectedFile.has_value() ? fileInfo->desc.id == _selectedFile.value() : false;
+            bool selected = _selectedAssetId.has_value() ? fileInfo->desc.id == _selectedAssetId.value() : false;
             if (ImGui::Selectable(fileLabel.c_str(), selected)) {
-                _selectedFile = fileInfo->desc.id;
+                _selectedAssetId = fileInfo->desc.id;
             }
         }
 

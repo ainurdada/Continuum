@@ -21,12 +21,13 @@ struct ContentBrowserDrawInfo {
 
 struct ContentBrowserDrawResult {
     std::optional<engine::asset::AssetID> reimportAssetId = std::nullopt;
+    std::optional<engine::asset::AssetID> assignModelAssetId = std::nullopt;
 };
 
 class ContentBrowserPanel {
   private:
     std::filesystem::path _currentDirectory;
-    std::optional<engine::asset::AssetID> _selectedFile = std::nullopt;
+    std::optional<engine::asset::AssetID> _selectedAssetId = std::nullopt;
 
   public:
     ContentBrowserPanel(std::filesystem::path directory) : _currentDirectory(directory) {}

@@ -200,6 +200,36 @@
                 }
             },
             "id": 7
+        },
+        {
+            "components": {
+                "engine::scene::MeshReference": {
+                    "modelId": {
+                        "value": "6bb60a0a10702dd7061fc354e124acc5"
+                    }
+                },
+                "engine::scene::Name": {
+                    "value": "Sponza"
+                },
+                "engine::scene::Transform": {
+                    "position": [
+                        13.5,
+                        0.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        -0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                }
+            },
+            "id": 8
         }
     ],
     "formatVersion": 1

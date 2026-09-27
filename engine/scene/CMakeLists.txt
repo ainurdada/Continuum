@@ -17,6 +17,7 @@ target_link_libraries(
     ContinuumEngine_Math
     ContinuumEngine_Reflection
     ContinuumEngine_Render
+    ContinuumEngine_AssetManager
 )
 
 continuum_enable_reflection(ContinuumEngine_Scene MODULE Scene ROOTS ${CMAKE_CURRENT_SOURCE_DIR}/public)
