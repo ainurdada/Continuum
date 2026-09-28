@@ -15,6 +15,7 @@ target_link_libraries(
     PRIVATE
     nlohmann_json::nlohmann_json
     assimp::assimp
+    SDL3::SDL3
 )
 
 target_link_libraries(

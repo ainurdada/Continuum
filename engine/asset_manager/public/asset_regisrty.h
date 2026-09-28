@@ -1,10 +1,10 @@
 #pragma once
 
-#include <filesystem>
-#include <unordered_map>
-#include <optional>
 #include <expected>
+#include <filesystem>
+#include <optional>
 #include <string>
+#include <unordered_map>
 
 #include "asset.h"
 
@@ -13,6 +13,7 @@ namespace engine::asset {
 struct AssetInfo {
     AssetDescription desc;
     std::filesystem::path path;
+    AssetType type = AssetType::Unknown;
 };
 
 class AssetRegistry {

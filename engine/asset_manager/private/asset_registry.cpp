@@ -6,6 +6,11 @@ namespace engine::asset {
 
 namespace {
 
+const std::unordered_map<std::string, AssetType> extensionTypes{
+    {".obj", AssetType::Model},
+    {".png", AssetType::Texture},
+};
+
 std::string generateAssetId() {
     const char* alphabet = "0123456789abcdef";
     std::random_device rd;
@@ -39,6 +44,15 @@ std::expected<std::filesystem::path, std::string> getAbsolutePath(std::filesyste
 } // namespace
 
 std::expected<void, std::string> AssetRegistry::registerAsset(const std::filesystem::path& file) {
+
+    // Define asset type
+    auto ext = file.extension();
+    if (!extensionTypes.contains(ext.generic_string())) {
+        return {};
+    }
+    AssetType type = extensionTypes.at(ext.generic_string());
+
+    // Create asset meta file
     if (!hasMetaFile(file)) {
         auto createResult = createMetaFile(file, AssetID{.value = generateAssetId()});
         if (!createResult) {
@@ -68,7 +82,8 @@ std::expected<void, std::string> AssetRegistry::registerAsset(const std::filesys
             return std::unexpected<std::string>("failed to register not unique asset id: " + canonicalPath.generic_string());
         }
     } else {
-        if (!_assets.emplace(desc->id, AssetInfo{.desc = desc.value(), .path = relativePath}).second) {
+
+        if (!_assets.emplace(desc->id, AssetInfo{.desc = desc.value(), .path = relativePath, .type = type}).second) {
             return std::unexpected("Failed to register asset: " + file.generic_string());
         }
     }
@@ -117,7 +132,7 @@ std::expected<void, std::string> AssetRegistry::registerProjectFiles() {
             const auto& entry = *iter;
 
             try {
-                if (entry.is_regular_file() && entry.path().extension() == ".obj") {
+                if (entry.is_regular_file()) {
                     auto registrationResult = registerAsset(entry.path());
                     if (!registrationResult) {
                         return std::unexpected(registrationResult.error());

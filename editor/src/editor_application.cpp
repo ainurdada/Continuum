@@ -362,27 +362,41 @@ int EditorApplication::run() {
                         };
                         auto contentBrowserDrawResutl = _contentBrowser.draw(contentBrowserDrawInfo);
                         if (contentBrowserDrawResutl.reimportAssetId) {
-                            auto model = engine::asset::loadModel(_project.projectRoot, _assetRegistry, contentBrowserDrawResutl.reimportAssetId.value(), true);
-                            if (!model) {
-                                SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "%s", model.error().c_str());
-                            } else if (model->cacheWarning) {
-                                SDL_LogWarn(SDL_LogCategory::SDL_LOG_CATEGORY_APPLICATION, "%s", model->cacheWarning->c_str());
+                            auto assetInfo = _assetRegistry.getAsset(contentBrowserDrawResutl.reimportAssetId.value());
+                            if (assetInfo) {
+                                if (assetInfo->type == engine::asset::AssetType::Model) {
+                                    auto model = engine::asset::loadModel(_project.projectRoot, _assetRegistry, contentBrowserDrawResutl.reimportAssetId.value(), true);
+                                    if (!model) {
+                                        SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "%s", model.error().c_str());
+                                    } else if (model->cacheWarning) {
+                                        SDL_LogWarn(SDL_LogCategory::SDL_LOG_CATEGORY_APPLICATION, "%s", model->cacheWarning->c_str());
+                                    }
+                                } else if (assetInfo->type == engine::asset::AssetType::Texture) {
+                                    auto texture = engine::asset::loadTexture(_project.projectRoot, _assetRegistry, contentBrowserDrawResutl.reimportAssetId.value(), true);
+                                    if (!texture) {
+                                        SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "%s", texture.error().c_str());
+                                    } else if (texture->cacheWarning) {
+                                        SDL_LogWarn(SDL_LogCategory::SDL_LOG_CATEGORY_APPLICATION, "%s", texture->cacheWarning->c_str());
+                                    }
+                                }
                             }
                         }
                         if (contentBrowserDrawResutl.assignModelAssetId && _session->selectedEntity()) {
                             auto assetInfo = _assetRegistry.getAsset(contentBrowserDrawResutl.assignModelAssetId.value());
-                            auto entity = _session->selectedEntity().value();
-                            auto& world = _session->documentMut().worldMut();
-                            if (assetInfo && world.hasEntity(entity)) {
-                                auto& meshes = world.getStash<engine::scene::MeshReference>();
-                                if (meshes.has(entity)) {
-                                    if (meshes.get(entity)->modelId != assetInfo->desc.id) {
-                                        meshes.getMut(entity)->modelId = assetInfo->desc.id;
+                            if (assetInfo && assetInfo->type == engine::asset::AssetType::Model) {
+                                auto entity = _session->selectedEntity().value();
+                                auto& world = _session->documentMut().worldMut();
+                                if (assetInfo && world.hasEntity(entity)) {
+                                    auto& meshes = world.getStash<engine::scene::MeshReference>();
+                                    if (meshes.has(entity)) {
+                                        if (meshes.get(entity)->modelId != assetInfo->desc.id) {
+                                            meshes.getMut(entity)->modelId = assetInfo->desc.id;
+                                            _session->documentMut().markDirty();
+                                        }
+                                    } else {
+                                        meshes.add(entity, engine::scene::MeshReference{.modelId = assetInfo->desc.id});
                                         _session->documentMut().markDirty();
                                     }
-                                } else {
-                                    meshes.add(entity, engine::scene::MeshReference{.modelId = assetInfo->desc.id});
-                                    _session->documentMut().markDirty();
                                 }
                             }
                         }

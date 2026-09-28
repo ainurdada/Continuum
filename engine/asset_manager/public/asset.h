@@ -19,6 +19,12 @@ struct AssetIDHash {
     std::size_t operator()(const AssetID& id) const noexcept;
 };
 
+enum class AssetType {
+    Unknown,
+    Model,
+    Texture,
+};
+
 struct AssetDescription {
     int formatVersion;
     AssetID id;

@@ -1,5 +1,8 @@
 #include <asset_importer.h>
 
+#include <memory>
+
+#include <SDL3/SDL.h>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -40,6 +43,34 @@ std::expected<std::vector<engine::graphics::MeshData>, std::string> loadMeshes(s
     }
 
     return result;
+}
+
+std::expected<engine::graphics::TextureData, std::string> loadTexture(std::filesystem::path file) {
+    std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> surface(SDL_LoadPNG(file.generic_string().c_str()), &SDL_DestroySurface);
+    if (!surface) {
+        return std::unexpected(SDL_GetError());
+    }
+
+    std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> converted(SDL_ConvertSurface(surface.get(), SDL_PIXELFORMAT_RGBA32), &SDL_DestroySurface);
+    if (!converted) {
+        return std::unexpected(SDL_GetError());
+    }
+
+    engine::graphics::TextureData tex{};
+    tex.width = converted->w;
+    tex.height = converted->h;
+    tex.bytes.reserve(tex.width * tex.height * 4);
+
+    for (int h = 0; h < tex.height; h++) {
+        for (int w = 0; w < tex.width; w++) {
+            tex.bytes.push_back(*((std::uint8_t*)converted->pixels + converted->pitch * h + 4 * w));
+            tex.bytes.push_back(*((std::uint8_t*)converted->pixels + converted->pitch * h + 4 * w + 1));
+            tex.bytes.push_back(*((std::uint8_t*)converted->pixels + converted->pitch * h + 4 * w + 2));
+            tex.bytes.push_back(*((std::uint8_t*)converted->pixels + converted->pitch * h + 4 * w + 3));
+        }
+    }
+
+    return tex;
 }
 
 } // namespace engine::asset::import
