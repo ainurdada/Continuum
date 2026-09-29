@@ -1,3 +1,5 @@
+<img width="2138" height="736" alt="continuum_label" src="https://github.com/user-attachments/assets/428b4ef5-1cd7-449e-8a17-aa095b802f18" />
+
 # Continuum
 
 Continuum is a C++23 game engine in development. It has an archetype-based ECS, generated reflection, an SDL GPU renderer, and an editor for building and playing scenes. The included demo project shows the current workflow; the renderer, asset pipeline, and game features are still growing.
