@@ -5,6 +5,7 @@
 namespace engine::ecs_reflection {
 
 class WorldReflectionContext;
+class ComponentBindingRegistry;
 
 } // namespace engine::ecs_reflection
 
@@ -18,11 +19,18 @@ namespace editor {
 
 class EditorSession;
 
+struct InspectorDrawData {
+    EditorSession& session;
+    engine::ecs_reflection::WorldReflectionContext& ctx;
+    const ui::ComponentDrawerRegistry& drawers;
+    const engine::ecs_reflection::ComponentBindingRegistry& bindings;
+};
+
 class InspectorPanel {
   public:
     bool deleteChildrenMode = false;
 
-    void draw(EditorSession& session, engine::ecs_reflection::WorldReflectionContext& ctx, const ui::ComponentDrawerRegistry& drawers);
+    void draw(InspectorDrawData& data);
 };
 
 } // namespace editor

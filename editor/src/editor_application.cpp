@@ -377,7 +377,13 @@ int EditorApplication::run() {
                         _hierarchy.draw(*_session, worldfReflectionContext);
 
                         // Inspector
-                        _inspector.draw(*_session, worldfReflectionContext, _componentDrawers);
+                        InspectorDrawData inspectorData{
+                            .session = _session.value(),
+                            .ctx = worldfReflectionContext,
+                            .drawers = _componentDrawers,
+                            .bindings = _componentBindings,
+                        };
+                        _inspector.draw(inspectorData);
 
                         // Content Browser
                         ContentBrowserDrawInfo contentBrowserDrawInfo{

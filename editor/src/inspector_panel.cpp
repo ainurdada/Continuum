@@ -1,5 +1,6 @@
 #include <inspector_panel.h>
 
+#include <set>
 #include <string>
 
 #include <SDL3/SDL_log.h>
@@ -8,6 +9,7 @@
 #include <misc/cpp/imgui_stdlib.h>
 
 #include <ecs/ecs.h>
+#include <ecs_reflection/public/component_binding_registry.h>
 #include <ecs_reflection/public/world_reflection_context.h>
 #include <scene/public/mesh_renderer.h>
 #include <scene/public/name.h>
@@ -22,6 +24,7 @@
 
 namespace editor {
 
+namespace {
 bool drawValue(ui::DrawRequest& data, const ui::ComponentDrawerRegistry& drawers);
 
 bool drawValueContent(ui::DrawRequest& data, const ui::ComponentDrawerRegistry& drawers) {
@@ -89,7 +92,41 @@ bool drawValue(ui::DrawRequest& data, const ui::ComponentDrawerRegistry& drawers
     return drawValueContent(data, drawers);
 }
 
-void InspectorPanel::draw(EditorSession& session, engine::ecs_reflection::WorldReflectionContext& ctx, const ui::ComponentDrawerRegistry& drawers) {
+std::expected<void, std::string> createComponent(engine::ecs::Entity entity, EditorSession& session, const engine::ecs_reflection::ComponentBinding& binding, engine::ecs_reflection::WorldReflectionContext& ctx) {
+    auto& world = session.documentMut().worldMut();
+
+    if (!world.hasEntity(entity)) {
+        return std::unexpected("Not valid entity");
+    }
+
+    if (!binding.create) {
+        return std::unexpected("component does not have create function");
+    }
+
+    auto finishEdit = session.finishActiveComponentEdit(ctx);
+    if (!finishEdit) {
+        return std::unexpected(finishEdit.error());
+    }
+
+    auto createResult = binding.create(world, entity, *binding.type);
+    if (!createResult) {
+        return std::unexpected(createResult.error());
+    }
+
+    session.clearHistory();
+
+    session.documentMut().markDirty();
+
+    return {};
+}
+} // namespace
+
+void InspectorPanel::draw(InspectorDrawData& data) {
+    auto& session = data.session;
+    auto& ctx = data.ctx;
+    auto& drawers = data.drawers;
+    auto& bindings = data.bindings;
+
     auto& parentStash = session.documentMut().worldMut().getStash<engine::scene::Parent>();
     auto& transformStash = session.documentMut().worldMut().getStash<engine::scene::Transform>();
     auto& meshRendererStash = session.documentMut().worldMut().getStash<engine::scene::MeshRenderer>();
@@ -103,7 +140,8 @@ void InspectorPanel::draw(EditorSession& session, engine::ecs_reflection::WorldR
             engine::ecs::Entity entity = session.selectedEntity().value();
             engine::scene::SceneEntityId sceneId = *sceneEntityIdStash.get(entity);
 
-            ctx.visitComponentsMut(entity, [&session, sceneId, &drawers, &activeEditDrawn](engine::ecs::IStash& stash, std::optional<engine::reflection::ObjectView> view) {
+            std::set<std::type_index> entityComponents{};
+            ctx.visitComponentsMut(entity, [&session, sceneId, &drawers, &activeEditDrawn, &entityComponents](engine::ecs::IStash& stash, std::optional<engine::reflection::ObjectView> view) {
                 if (!view) {
                     return;
                 }
@@ -120,7 +158,37 @@ void InspectorPanel::draw(EditorSession& session, engine::ecs_reflection::WorldR
                 ImGui::PushID(id.c_str());
                 activeEditDrawn |= drawValue(data, drawers);
                 ImGui::PopID();
+
+                entityComponents.emplace(stash.nativeTypeKey());
             });
+
+            // add component button
+            if (ImGui::Button("add component")) {
+                ImGui::OpenPopup("Available Component");
+            }
+            bool hasComponentsToAdd = false;
+            if (ImGui::BeginPopup("Available Component")) {
+                bindings.visitRegisteredComponents([&entityComponents, &hasComponentsToAdd, &entity, &session, &ctx](const engine::ecs_reflection::ComponentBinding& binding) {
+                    if (binding.create && !entityComponents.contains(binding.nativeTypeIndex)) {
+                        std::string label = getDisplayName(*binding.type) + "###component_" + std::string(binding.type->key);
+                        if (ImGui::Button(label.c_str())) {
+                            auto createResult = createComponent(entity, session, binding, ctx);
+                            if (!createResult) {
+                                SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "%s", createResult.error().c_str());
+                            } else {
+                                ImGui::CloseCurrentPopup();
+                            }
+                        }
+                        hasComponentsToAdd = true;
+                    }
+                });
+
+                if (!hasComponentsToAdd) {
+                    ImGui::TextUnformatted("No components to add");
+                }
+
+                ImGui::EndPopup();
+            }
 
             // add mesh renderer button
             if (transformStash.has(entity) && !meshRendererStash.has(entity)) {

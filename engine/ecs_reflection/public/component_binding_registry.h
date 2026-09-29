@@ -38,6 +38,14 @@ class ComponentBindingRegistry {
         }
         return &binging->second;
     }
+
+    /// @brief Visit all registered components in project
+    /// @tparam Visiter function like void(const engine::ecs_reflection::ComponentBinding&)
+    template <typename Visiter> void visitRegisteredComponents(Visiter&& visiter) const {
+        for (const auto& [key, componentBinding] : _bindings) {
+            visiter(componentBinding);
+        }
+    }
 };
 
 } // namespace engine::ecs_reflection
