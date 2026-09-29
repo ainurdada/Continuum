@@ -1,6 +1,7 @@
 #include <editor_application.h>
 
 #include <iostream>
+#include <vector>
 
 #include <SDL3/SDL.h>
 #include <imgui_impl_sdl3.h>
@@ -19,6 +20,7 @@
 #include <render_sdl/public/graphics_context.h>
 #include <render_sdl/public/renderer.h>
 #include <scene/public/camera.h>
+#include <scene/public/hierarchy.h>
 #include <scene/public/mesh_reference.h>
 #include <scene/public/name.h>
 #include <scene/public/transform.h>
@@ -280,6 +282,28 @@ int EditorApplication::run() {
                         returnCode = 1;
                         running = false;
                     }
+                    std::vector<std::uint32_t> meshHandles{};
+                    std::optional<engine::ecs::Entity> sponza = std::nullopt;
+
+                    auto& mesheReferences = _session->documentMut().worldMut().getStash<engine::scene::MeshReference>();
+                    auto meshReferenceQuery = _session->documentMut().worldMut().query().with<engine::scene::MeshReference>().build();
+                    if (renderer) {
+                        for (auto entity : meshReferenceQuery.view()) {
+                            if (sponza) {
+                                break;
+                            }
+                            sponza = entity;
+                            auto loadlModeResult = engine::asset::loadModel(_project.projectRoot, _assetRegistry, mesheReferences.get(entity)->modelId);
+                            if (loadlModeResult) {
+                                for (auto& mesh : loadlModeResult->meshes) {
+                                    auto handle = renderer->uploadMesh(mesh);
+                                    if (handle) {
+                                        meshHandles.push_back(handle.value());
+                                    }
+                                }
+                            }
+                        }
+                    }
 
                     Uint64 previousFrameTime = SDL_GetTicksNS();
                     while (running) {
@@ -453,6 +477,15 @@ int EditorApplication::run() {
 
                         if (swapchainTexture) {
                             if (viewportFrame.has_value()) {
+                                if (sponza) {
+                                    auto& transforms = _session->documentMut().worldMut().getStash<engine::scene::Transform>();
+                                    auto worldMatrix = engine::scene::worldMatrix(_session->documentMut().worldMut(), sponza.value());
+                                    if (worldMatrix) {
+                                        for (auto handle : meshHandles) {
+                                            viewportFrame->rfd.items.push_back(engine::RenderItem{.geometryId = engine::GeometryId::UploadedMesh, .meshHandle = handle, .modelMatrix = worldMatrix.value()});
+                                        }
+                                    }
+                                }
                                 if (!renderer->recordRenderPass(commandBuffer, viewportFrame->texture, viewportFrame->widthInt, viewportFrame->heightInt, viewportFrame->rfd)) {
                                     SDL_CancelGPUCommandBuffer(commandBuffer);
                                     returnCode = 1;

@@ -257,27 +257,40 @@ bool Renderer::recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUText
         transformUniform.model = item.modelMatrix;
         SDL_PushGPUVertexUniformData(commandBuffer, 0, &transformUniform, sizeof(TransformUniform));
 
-        Uint32 indexCount{};
+        const Mesh* mesh = nullptr;
         switch (item.geometryId) {
-        case GeometryId::Cube:
-            // Bind vertex buffer
-            SDL_GPUBufferBinding vertexBufferBinding{};
-            vertexBufferBinding.buffer = _cubeMesh.vertexBufferHandle();
-            vertexBufferBinding.offset = 0;
-            SDL_BindGPUVertexBuffers(renderPass, 0, &vertexBufferBinding, 1);
 
-            // Bind index buffer
-            SDL_GPUBufferBinding indexBufferBinding{};
-            indexBufferBinding.buffer = _cubeMesh.indexBufferHandle();
-            indexBufferBinding.offset = 0;
-            SDL_BindGPUIndexBuffer(renderPass, &indexBufferBinding, SDL_GPU_INDEXELEMENTSIZE_32BIT);
-
-            indexCount = _cubeMesh.indexCount();
+        case GeometryId::Cube: {
+            mesh = &_cubeMesh;
             break;
         }
 
+        case GeometryId::UploadedMesh: {
+            if (item.meshHandle == 0 || item.meshHandle > _meshes.size()) {
+                continue;
+            }
+            mesh = &_meshes.at(item.meshHandle - 1);
+            break;
+        }
+
+        default:
+            continue;
+        }
+
+        // Bind vertex buffer
+        SDL_GPUBufferBinding vertexBufferBinding{};
+        vertexBufferBinding.buffer = mesh->vertexBufferHandle();
+        vertexBufferBinding.offset = 0;
+        SDL_BindGPUVertexBuffers(renderPass, 0, &vertexBufferBinding, 1);
+
+        // Bind index buffer
+        SDL_GPUBufferBinding indexBufferBinding{};
+        indexBufferBinding.buffer = mesh->indexBufferHandle();
+        indexBufferBinding.offset = 0;
+        SDL_BindGPUIndexBuffer(renderPass, &indexBufferBinding, SDL_GPU_INDEXELEMENTSIZE_32BIT);
+
         // Draw
-        SDL_DrawGPUIndexedPrimitives(renderPass, indexCount, 1, 0, 0, 0);
+        SDL_DrawGPUIndexedPrimitives(renderPass, mesh->indexCount(), 1, 0, 0, 0);
     }
 
     // draw global grid
@@ -303,6 +316,16 @@ bool Renderer::recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUText
     // End render pass
     SDL_EndGPURenderPass(renderPass);
     return true;
+}
+
+std::optional<MeshHandle> Renderer::uploadMesh(const MeshData& data) {
+    auto mesh = Mesh::load(_graphicsContext->device(), data);
+    if (!mesh) {
+        return std::nullopt;
+    }
+
+    _meshes.push_back(std::move(mesh.value()));
+    return _meshes.size();
 }
 
 Renderer::Renderer(SDL_Window* window, GraphicsContext* graphicsContext, GraphicsPipeline&& graphicsPipeline, GraphicsPipeline&& gridGraphicsPipeline, DepthTarget&& depthTarget, Mesh&& cubeMesh, Mesh&& globalGridMesh)

@@ -50,7 +50,7 @@ void editor::PlaySession::renderScene(engine::RenderFrameData& frame) {
         auto mesh = meshRenderers.get(entity);
 
         engine::RenderItem item{};
-        item.geometryId = engine::GeometryId::Cube;
+        item.geometryId = meshRenderers.get(entity)->geometryId;
         auto worldMatrix = engine::scene::worldMatrix(_world, entity);
         if (!worldMatrix) {
             continue;

@@ -1,9 +1,11 @@
 #pragma once
 
-#include <vector>
 #include <cstdint>
+#include <vector>
 
 namespace engine::graphics {
+
+using MeshHandle = std::uint32_t;
 
 struct PositionVertex {
     float x;
