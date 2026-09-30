@@ -119,6 +119,34 @@ std::expected<void, std::string> createComponent(engine::ecs::Entity entity, Edi
 
     return {};
 }
+
+std::expected<void, std::string> removeComponent(engine::ecs::Entity entity, EditorSession& session, const engine::ecs_reflection::ComponentBinding& binding, engine::ecs_reflection::WorldReflectionContext& ctx) {
+    auto& world = session.documentMut().worldMut();
+
+    if (!world.hasEntity(entity)) {
+        return std::unexpected("Not valid entity");
+    }
+
+    if (!binding.remove) {
+        return std::unexpected("component does not have remove function");
+    }
+
+    auto finishEdit = session.finishActiveComponentEdit(ctx);
+    if (!finishEdit) {
+        return std::unexpected(finishEdit.error());
+    }
+
+    auto removeResult = binding.remove(world, entity, *binding.type);
+    if (!removeResult) {
+        return std::unexpected(removeResult.error());
+    }
+
+    session.clearHistory();
+
+    session.documentMut().markDirty();
+
+    return {};
+}
 } // namespace
 
 void InspectorPanel::draw(InspectorDrawData& data) {
@@ -141,7 +169,8 @@ void InspectorPanel::draw(InspectorDrawData& data) {
             engine::scene::SceneEntityId sceneId = *sceneEntityIdStash.get(entity);
 
             std::set<std::type_index> entityComponents{};
-            ctx.visitComponentsMut(entity, [&session, sceneId, &drawers, &activeEditDrawn, &entityComponents](engine::ecs::IStash& stash, std::optional<engine::reflection::ObjectView> view) {
+            std::optional<engine::ecs::IStash*> stashToRemove = std::nullopt;
+            ctx.visitComponentsMut(entity, [&session, sceneId, &drawers, &activeEditDrawn, &entityComponents, &stashToRemove](engine::ecs::IStash& stash, std::optional<engine::reflection::ObjectView> view) {
                 if (!view) {
                     return;
                 }
@@ -157,10 +186,26 @@ void InspectorPanel::draw(InspectorDrawData& data) {
                 std::string id = std::to_string(sceneId.value) + "::" + std::string(view->type()->key);
                 ImGui::PushID(id.c_str());
                 activeEditDrawn |= drawValue(data, drawers);
+                if (ImGui::Button("remove")) {
+                    stashToRemove = &stash;
+                }
                 ImGui::PopID();
 
                 entityComponents.emplace(stash.nativeTypeKey());
             });
+
+            // remove component
+            if (stashToRemove) {
+                auto binding = bindings.findBinding(stashToRemove.value()->nativeTypeKey());
+                if (binding) {
+                    auto removeResult = removeComponent(entity, session, *binding, ctx);
+                    if (!removeResult) {
+                        SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "%s", removeResult.error().c_str());
+                    }
+                } else {
+                    SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Failed to find binding");
+                }
+            }
 
             // add component button
             if (ImGui::Button("add component")) {
@@ -188,29 +233,6 @@ void InspectorPanel::draw(InspectorDrawData& data) {
                 }
 
                 ImGui::EndPopup();
-            }
-
-            // add mesh renderer button
-            if (transformStash.has(entity) && !meshRendererStash.has(entity)) {
-                if (ImGui::Button("Add MeshRenderer")) {
-                    engine::scene::MeshRenderer newMeshRenderer{};
-                    newMeshRenderer.geometryId = engine::GeometryId::Cube;
-                    meshRendererStash.add(entity, newMeshRenderer);
-                    if (meshRendererStash.has(entity)) {
-                        session.documentMut().markDirty();
-                    } else {
-                        SDL_Log("failed to add mesh renderer");
-                    }
-                }
-            } else if (meshRendererStash.has(entity)) {
-                if (ImGui::Button("Remove MeshRenderer")) {
-                    meshRendererStash.remove(entity);
-                    if (!meshRendererStash.has(entity)) {
-                        session.documentMut().markDirty();
-                    } else {
-                        SDL_Log("failed to remove mesh renderer");
-                    }
-                }
             }
 
             // destroy entity

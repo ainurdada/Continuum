@@ -10,7 +10,7 @@
 #include <reflection/public/object_view.h>
 #include <reflection/public/type_descriptor.h>
 
-namespace engine::ecs_reflection { 
+namespace engine::ecs_reflection {
 
 struct ComponentBinding {
     std::type_index nativeTypeIndex;
@@ -25,6 +25,9 @@ struct ComponentBinding {
 
     using CreateFn = std::expected<reflection::ObjectView, std::string> (*)(ecs::World&, ecs::Entity, const reflection::TypeDescriptor&);
     CreateFn create = nullptr;
+
+    using RemoveFn = std::expected<void, std::string> (*)(ecs::World&, ecs::Entity, const reflection::TypeDescriptor&);
+    RemoveFn remove = nullptr;
 };
 
 namespace detail {
@@ -80,6 +83,27 @@ template <typename T> std::expected<reflection::ObjectView, std::string> createC
     return view.value();
 }
 
+template <typename T> std::expected<void, std::string> removeComponent(ecs::World& world, ecs::Entity entity, const reflection::TypeDescriptor& desc) {
+    if (desc.nativeTypeKey != typeid(T)) {
+        return std::unexpected("Not correct component");
+    }
+    if (!world.hasEntity(entity)) {
+        return std::unexpected("Not valid entity");
+    }
+
+    auto& stash = world.getStash<T>();
+    if (!stash.has(entity)) {
+        return std::unexpected("Component is null");
+    }
+
+    stash.remove(entity);
+    if (stash.has(entity)) {
+        return std::unexpected("Failed to remove component");
+    }
+
+    return {};
+}
+
 } // namespace detail
 
 template <typename T> std::optional<ComponentBinding> makeComponentBinding(const reflection::TypeRegistry& reg) {
@@ -101,6 +125,7 @@ template <typename T> std::optional<ComponentBinding> makeComponentBinding(const
         .type = desc,
         .read = &detail::readComponent<T>,
         .write = &detail::writeComponent<T>,
+        .remove = &detail::removeComponent<T>,
     };
 
     if constexpr (std::is_default_constructible_v<T> && std::is_copy_constructible_v<T>) {
