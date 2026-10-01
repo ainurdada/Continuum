@@ -450,7 +450,7 @@ int EditorApplication::run() {
                         engine::RenderFrameData frame{};
                         if (_playSession.get()) {
                             _playSession->update(deltaSeconds);
-                            _playSession->renderScene(frame);
+                            _playSession->renderScene(frame, meshHandles);
                         }
                         SceneViewportDrawData data{
                             .session = *_session,

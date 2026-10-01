@@ -6,6 +6,7 @@
 #include <reflection_json/public/scene_serializer_json.h>
 #include <scene/public/camera.h>
 #include <scene/public/hierarchy.h>
+#include <scene/public/mesh_reference.h>
 #include <scene/public/mesh_renderer.h>
 #include <scene/public/transform.h>
 
@@ -37,9 +38,10 @@ void editor::PlaySession::update(float deltaTime) {
     }
 }
 
-void editor::PlaySession::renderScene(engine::RenderFrameData& frame) {
+void editor::PlaySession::renderScene(engine::RenderFrameData& frame, const std::unordered_map<engine::asset::AssetID, std::vector<engine::graphics::MeshHandle>, engine::asset::AssetIDHash>& meshHandles) {
     auto& transforms = _world.getStash<engine::scene::Transform>();
     auto& meshRenderers = _world.getStash<engine::scene::MeshRenderer>();
+    auto& meshRefs = _world.getStash<engine::scene::MeshReference>();
     auto& cameras = _world.getStash<engine::scene::Camera>();
 
     auto meshQuery = _world.query().with<engine::scene::MeshRenderer>().with<engine::scene::Transform>().build();
@@ -57,7 +59,24 @@ void editor::PlaySession::renderScene(engine::RenderFrameData& frame) {
         }
         item.modelMatrix = worldMatrix.value();
 
-        frame.items.push_back(item);
+        switch (item.geometryId) {
+        case engine::GeometryId::UploadedMesh: {
+            auto meshRef = meshRefs.get(entity);
+            if (!meshRef || !meshHandles.contains(meshRef->modelId)) {
+                continue;
+            }
+            for (auto& meshhandle : meshHandles.at(meshRef->modelId)) {
+                auto newItem = item;
+                newItem.meshHandle = meshhandle;
+                frame.items.push_back(newItem);
+            }
+            continue;
+        }
+
+        default:
+            frame.items.push_back(item);
+            break;
+        }
     }
 
     for (auto entity : cameraQuery.view()) {
