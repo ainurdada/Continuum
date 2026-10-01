@@ -5,6 +5,7 @@
 
 #include <ecs_reflection/public/world_reflection_context.h>
 #include <scene/public/hierarchy.h>
+#include <scene/public/mesh_reference.h>
 #include <scene/public/mesh_renderer.h>
 #include <scene/public/scene_entity_id.h>
 
@@ -21,7 +22,12 @@ SceneViewport::SceneViewport(SDL_Window* window, SDL_GPUDevice* device, SDL_GPUT
     _editorCameraTransform.rotation.x = glm::radians(30.0f);
 }
 
-std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::draw(EditorSession& session, engine::ecs_reflection::WorldReflectionContext& ctx, engine::RenderFrameData& rfd, bool play) {
+std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::draw(SceneViewportDrawData& data) {
+    auto& play = data.play;
+    auto& rfd = data.rfd;
+    auto& session = data.session;
+    auto& ctx = data.ctx;
+
     auto validCamera = [](const engine::RenderCameraData& camera) { return camera.nearPlane > 0 && camera.farPlane > camera.nearPlane && camera.verticalFovRadians > 0 && camera.verticalFovRadians < math::pi<float>(); };
     std::string error{};
     ImGuiIO& io = ImGui::GetIO();
@@ -151,10 +157,7 @@ std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::dra
     }
 
     auto& transformStash = session.documentMut().worldMut().getStash<engine::scene::Transform>();
-    auto& meshRendererStash = session.documentMut().worldMut().getStash<engine::scene::MeshRenderer>();
     auto& sceneEntityIdStash = session.documentMut().worldMut().getStash<engine::scene::SceneEntityId>();
-
-    auto renderableEntityQuery = session.documentMut().worldMut().query().with<engine::scene::MeshRenderer>().with<engine::scene::Transform>().build();
 
     if (sceneViewRenderable) {
         // gizmo
@@ -231,6 +234,12 @@ std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::dra
             }
         }
         if (!play) {
+
+            auto& meshRendererStash = session.documentMut().worldMut().getStash<engine::scene::MeshRenderer>();
+            auto& meshRefStash = session.documentMut().worldMut().getStash<engine::scene::MeshReference>();
+
+            auto renderableEntityQuery = session.documentMut().worldMut().query().with<engine::scene::MeshRenderer>().with<engine::scene::Transform>().build();
+
             for (auto entity : renderableEntityQuery.view()) {
                 auto worldMatrix = engine::scene::worldMatrix(session.document().world(), entity);
                 if (!worldMatrix.has_value()) {
@@ -238,7 +247,31 @@ std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::dra
                     continue;
                 }
                 auto meshRenderer = meshRendererStash.get(entity);
-                frame.rfd.items.push_back(engine::RenderItem{.geometryId = meshRenderer->geometryId, .modelMatrix = worldMatrix.value()});
+                switch (meshRenderer->geometryId) {
+
+                case engine::GeometryId::UploadedMesh: {
+                    if (!meshRefStash.has(entity)) {
+                        SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Entity with engine::GeometryId::UploadedMesh must have mesh reference component");
+                        continue;
+                    }
+                    auto assetId = meshRefStash.get(entity)->modelId;
+                    if (!data.mesheHandles.contains(assetId)) {
+                        SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Not valid asset id");
+                        continue;
+                    }
+                    for (auto handle : data.mesheHandles.at(assetId)) {
+                        frame.rfd.items.push_back(engine::RenderItem{.geometryId = engine::GeometryId::UploadedMesh, .meshHandle = handle, .modelMatrix = worldMatrix.value()});
+                    }
+                } break;
+
+                case engine::GeometryId::Cube: {
+                    frame.rfd.items.push_back(engine::RenderItem{.geometryId = engine::GeometryId::Cube, .modelMatrix = worldMatrix.value()});
+                } break;
+
+                default:
+                    SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Not supported GeometryId");
+                    continue;
+                }
             }
         }
     }

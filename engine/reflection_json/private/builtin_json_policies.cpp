@@ -200,6 +200,10 @@ std::expected<nlohmann::json, std::string> MeshRendererJsonPolicy::serialize(con
         json.emplace("geometry", "cube");
         break;
 
+    case engine::GeometryId::UploadedMesh:
+        json.emplace("geometry", "UploadedMesh");
+        break;
+
     default:
         return std::unexpected("Not supported geometry id");
     }
@@ -223,6 +227,9 @@ std::expected<void, std::string> MeshRendererJsonPolicy::deserialize(const nlohm
 
     if (geometryId == "cube") {
         value = engine::scene::MeshRenderer{.geometryId = engine::GeometryId::Cube};
+        return {};
+    } else if (geometryId == "UploadedMesh") {
+        value = engine::scene::MeshRenderer{.geometryId = engine::GeometryId::UploadedMesh};
         return {};
     } else {
         return std::unexpected("Not supported geometry id");

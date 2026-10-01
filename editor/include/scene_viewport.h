@@ -3,17 +3,19 @@
 #include <expected>
 #include <optional>
 #include <string>
+#include <unordered_map>
 
 #include <SDL3/SDL.h>
 #include <imgui.h>
 
 #include <ImGuizmo.h>
 
-#include <render_sdl/public/color_target.h>
+#include <asset_manager/public/asset.h>
+#include <render/public/mesh_data.h>
 #include <render/public/render_frame_data.h>
+#include <render_sdl/public/color_target.h>
 #include <scene/public/camera.h>
 #include <scene/public/transform.h>
-
 
 #define SCENE_VIEW_WINDOW_NAME "Scene"
 
@@ -32,6 +34,14 @@ struct SceneViewportFrame {
     SDL_GPUTexture* texture;
     Uint32 widthInt{};
     Uint32 heightInt{};
+};
+
+struct SceneViewportDrawData {
+    EditorSession& session;
+    engine::ecs_reflection::WorldReflectionContext& ctx;
+    engine::RenderFrameData& rfd;
+    std::unordered_map<engine::asset::AssetID, std::vector<engine::graphics::MeshHandle>, engine::asset::AssetIDHash>& mesheHandles;
+    bool play;
 };
 
 class SceneViewport {
@@ -59,7 +69,7 @@ class SceneViewport {
 
     SceneViewport(SDL_Window* window, SDL_GPUDevice* device, SDL_GPUTextureFormat format);
 
-    std::expected<std::optional<SceneViewportFrame>, std::string> draw(EditorSession& session, engine::ecs_reflection::WorldReflectionContext& ctx, engine::RenderFrameData& rfd, bool play);
+    std::expected<std::optional<SceneViewportFrame>, std::string> draw(SceneViewportDrawData& data);
 
     void stopMouseLook();
 };

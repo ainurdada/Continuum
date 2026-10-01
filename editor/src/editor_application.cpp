@@ -276,31 +276,40 @@ int EditorApplication::run() {
                     // Viewport
                     editor::SceneViewport viewport{window, graphicsContext->device(), initInfo.ColorTargetFormat};
 
-                    // Scene variables
+                    // Renderer
                     auto renderer = engine::graphics::Renderer::create(window, &graphicsContext.value());
                     if (!renderer) {
                         returnCode = 1;
                         running = false;
                     }
-                    std::vector<std::uint32_t> meshHandles{};
-                    std::optional<engine::ecs::Entity> sponza = std::nullopt;
+
+                    std::unordered_map<engine::asset::AssetID, std::vector<engine::graphics::MeshHandle>, engine::asset::AssetIDHash> meshHandles{};
 
                     auto& mesheReferences = _session->documentMut().worldMut().getStash<engine::scene::MeshReference>();
                     auto meshReferenceQuery = _session->documentMut().worldMut().query().with<engine::scene::MeshReference>().build();
                     if (renderer) {
                         for (auto entity : meshReferenceQuery.view()) {
-                            if (sponza) {
-                                break;
+
+                            auto& assetId = mesheReferences.get(entity)->modelId;
+                            if (meshHandles.contains(assetId)) {
+                                continue;
                             }
-                            sponza = entity;
-                            auto loadlModeResult = engine::asset::loadModel(_project.projectRoot, _assetRegistry, mesheReferences.get(entity)->modelId);
+
+                            auto loadlModeResult = engine::asset::loadModel(_project.projectRoot, _assetRegistry, assetId);
                             if (loadlModeResult) {
+                                if (!loadlModeResult->meshes.empty()) {
+                                    meshHandles.emplace(assetId, std::vector<engine::graphics::MeshHandle>{});
+                                }
+
                                 for (auto& mesh : loadlModeResult->meshes) {
                                     auto handle = renderer->uploadMesh(mesh);
                                     if (handle) {
-                                        meshHandles.push_back(handle.value());
+                                        meshHandles.at(assetId).push_back(handle.value());
                                     }
                                 }
+
+                            } else {
+                                SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "%s", loadlModeResult.error().c_str());
                             }
                         }
                     }
@@ -443,7 +452,14 @@ int EditorApplication::run() {
                             _playSession->update(deltaSeconds);
                             _playSession->renderScene(frame);
                         }
-                        auto drawViewportResult = viewport.draw(*_session, worldfReflectionContext, frame, _playSession.get());
+                        SceneViewportDrawData data{
+                            .session = *_session,
+                            .ctx = worldfReflectionContext,
+                            .rfd = frame,
+                            .mesheHandles = meshHandles,
+                            .play = _playSession.get() != nullptr,
+                        };
+                        auto drawViewportResult = viewport.draw(data);
                         if (!drawViewportResult) {
                             SDL_Log("%s", drawViewportResult.error().c_str());
                             returnCode = 1;
@@ -483,15 +499,6 @@ int EditorApplication::run() {
 
                         if (swapchainTexture) {
                             if (viewportFrame.has_value()) {
-                                if (sponza) {
-                                    auto& transforms = _session->documentMut().worldMut().getStash<engine::scene::Transform>();
-                                    auto worldMatrix = engine::scene::worldMatrix(_session->documentMut().worldMut(), sponza.value());
-                                    if (worldMatrix) {
-                                        for (auto handle : meshHandles) {
-                                            viewportFrame->rfd.items.push_back(engine::RenderItem{.geometryId = engine::GeometryId::UploadedMesh, .meshHandle = handle, .modelMatrix = worldMatrix.value()});
-                                        }
-                                    }
-                                }
                                 if (!renderer->recordRenderPass(commandBuffer, viewportFrame->texture, viewportFrame->widthInt, viewportFrame->heightInt, viewportFrame->rfd)) {
                                     SDL_CancelGPUCommandBuffer(commandBuffer);
                                     returnCode = 1;
