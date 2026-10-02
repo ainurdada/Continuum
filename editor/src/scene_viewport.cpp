@@ -50,7 +50,7 @@ std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::dra
         frame.rfd.camera = rCamera;
         cameraFromEditor = true;
     } else {
-        frame.rfd.camera = rfd.camera;
+        rCamera = rfd.camera.value();
     }
 
     bool sceneViewRenderable = false;
@@ -235,7 +235,7 @@ std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::dra
                     effectiveGizmoMode = ImGuizmo::LOCAL;
                 }
                 auto selectedSceneId = *sceneEntityIdStash.get(session.selectedEntity().value());
-                bool gizmoManipulated = ImGuizmo::Manipulate(glm::value_ptr(frame.rfd.camera->viewMatrix), glm::value_ptr(projection), _gizmoOperation, effectiveGizmoMode, glm::value_ptr(gizmoMatrix), nullptr, snap);
+                bool gizmoManipulated = ImGuizmo::Manipulate(glm::value_ptr(rCamera.viewMatrix), glm::value_ptr(projection), _gizmoOperation, effectiveGizmoMode, glm::value_ptr(gizmoMatrix), nullptr, snap);
                 gizmoIsActive = ImGuizmo::IsUsing();
                 if (gizmoManipulated) {
                     engine::ecs::Entity manipulatedEntity = session.selectedEntity().value();
@@ -276,8 +276,6 @@ std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::dra
             };
 
             engine::collectRenderFrameData(frameInput, frame.rfd);
-
-            frame.rfd.camera = rCamera;
         }
     }
     ImGui::End();
@@ -292,6 +290,8 @@ std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::dra
     if (!sceneViewRenderable) {
         return {};
     }
+
+    frame.rfd.camera = rCamera;
     frame.texture = _sceneViewColorTarget->handle();
     frame.depthTexture = _sceneViewDepthTarget->handle();
     return frame;

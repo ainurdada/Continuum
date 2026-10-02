@@ -26,6 +26,7 @@
 #include <scene/public/transform.h>
 
 #include <console_log.h>
+#include <editor_grid.h>
 #include <scene_viewport.h>
 #include <snapshot_bootstrap.h>
 #include <styles.h>
@@ -283,6 +284,13 @@ int EditorApplication::run() {
                         running = false;
                     }
 
+                    // Editor grid
+                    auto grid = EditorGrid::create(graphicsContext->device(), initInfo.ColorTargetFormat);
+                    if (!grid) {
+                        returnCode = 1;
+                        running = false;
+                    }
+
                     std::unordered_map<engine::asset::AssetID, std::vector<engine::graphics::MeshHandle>, engine::asset::AssetIDHash> meshHandles{};
 
                     auto ensureModelUploaded = [&renderer, &meshHandles, this](engine::asset::AssetID assetId) -> std::expected<void, std::string> {
@@ -527,6 +535,8 @@ int EditorApplication::run() {
 
                         if (swapchainTexture) {
                             if (viewportFrame.has_value()) {
+
+                                // draw scene
                                 if (!renderer->recordRenderPass(commandBuffer, viewportFrame->texture, viewportFrame->depthTexture, viewportFrame->widthInt, viewportFrame->heightInt, viewportFrame->rfd)) {
                                     SDL_SubmitGPUCommandBuffer(commandBuffer);
                                     returnCode = 1;
@@ -535,24 +545,14 @@ int EditorApplication::run() {
                                 }
 
                                 // draw global grid
-                                // if (renderFrameData.drawGlobalGrid) {
-                                //     // Bind grid pipeline
-                                //     SDL_BindGPUGraphicsPipeline(renderPass, _gridGraphicsPipeline.handle());
-                                //     transformUniform.model = math::identity();
-                                //     SDL_PushGPUVertexUniformData(commandBuffer, 0, &transformUniform, sizeof(TransformUniform));
-                                //     // Bind vertex buffer
-                                //     SDL_GPUBufferBinding vertexBufferBinding{};
-                                //     vertexBufferBinding.buffer = _gridMesh.vertexBufferHandle();
-                                //     vertexBufferBinding.offset = 0;
-                                //     SDL_BindGPUVertexBuffers(renderPass, 0, &vertexBufferBinding, 1);
-                                //     // Bind index buffer
-                                //     SDL_GPUBufferBinding indexBufferBinding{};
-                                //     indexBufferBinding.buffer = _gridMesh.indexBufferHandle();
-                                //     indexBufferBinding.offset = 0;
-                                //     SDL_BindGPUIndexBuffer(renderPass, &indexBufferBinding, SDL_GPU_INDEXELEMENTSIZE_32BIT);
-                                //     // Draw
-                                //     SDL_DrawGPUIndexedPrimitives(renderPass, _gridMesh.indexCount(), 1, 0, 0, 0);
-                                // }
+                                if (!_playSession) {
+                                    if (!grid->recordRenderPass(commandBuffer, viewportFrame->texture, viewportFrame->depthTexture, viewportFrame->widthInt, viewportFrame->heightInt, viewportFrame->rfd.camera.value())) {
+                                        SDL_SubmitGPUCommandBuffer(commandBuffer);
+                                        returnCode = 1;
+                                        running = false;
+                                        break;
+                                    }
+                                }
                             }
                             ImGui_ImplSDLGPU3_PrepareDrawData(imDrawData, commandBuffer);
 

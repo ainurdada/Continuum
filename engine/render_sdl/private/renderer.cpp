@@ -39,32 +39,10 @@ struct TransformUniform {
 
 static_assert(sizeof(TransformUniform) == 192);
 
-MeshData createGlobalGridMeshData(int halfCellCount, float spacingMeters) {
-    MeshData grid{};
-    for (int i = -halfCellCount; i <= halfCellCount; i++) {
-        std::uint32_t currentIndex = static_cast<std::uint32_t>(grid.positionVertices.size());
-        grid.positionVertices.push_back(PositionVertex{-halfCellCount * spacingMeters, 0, i * spacingMeters});
-        grid.positionVertices.push_back(PositionVertex{halfCellCount * spacingMeters, 0, i * spacingMeters});
-        grid.positionVertices.push_back(PositionVertex{i * spacingMeters, 0, -halfCellCount * spacingMeters});
-        grid.positionVertices.push_back(PositionVertex{i * spacingMeters, 0, halfCellCount * spacingMeters});
-        grid.indices.push_back(currentIndex);
-        grid.indices.push_back(currentIndex + 1);
-        grid.indices.push_back(currentIndex + 2);
-        grid.indices.push_back(currentIndex + 3);
-    }
-    return grid;
-}
-
 std::optional<Renderer> Renderer::create(SDL_Window* window, GraphicsContext* graphicsContext) {
     // Load cube mesh
     auto mesh = Mesh::load(graphicsContext->device(), cubeMeshData);
     if (!mesh) {
-        return std::nullopt;
-    }
-
-    // Load global grid
-    auto globalGridMesh = Mesh::load(graphicsContext->device(), createGlobalGridMeshData(20, 1));
-    if (!globalGridMesh) {
         return std::nullopt;
     }
 
@@ -96,14 +74,6 @@ std::optional<Renderer> Renderer::create(SDL_Window* window, GraphicsContext* gr
     fragmentShaderInfo.numUniformBuffers = 0;
     auto fragmentShader = Shader::load(graphicsContext->device(), fragmentShaderInfo);
     if (!fragmentShader) {
-        return std::nullopt;
-    }
-    ShaderLoadInfo gridFragmentShaderInfo{};
-    gridFragmentShaderInfo.name = "grid.frag";
-    gridFragmentShaderInfo.shaderStage = ShaderStage::Fragment;
-    gridFragmentShaderInfo.numUniformBuffers = 0;
-    auto gridFragmentShader = Shader::load(graphicsContext->device(), gridFragmentShaderInfo);
-    if (!gridFragmentShader) {
         return std::nullopt;
     }
 
@@ -151,15 +121,7 @@ std::optional<Renderer> Renderer::create(SDL_Window* window, GraphicsContext* gr
         return std::nullopt;
     }
 
-    graphicsPipelineCreateInfo.fragment_shader = gridFragmentShader.value().handle();
-    graphicsPipelineCreateInfo.primitive_type = SDL_GPU_PRIMITIVETYPE_LINELIST;
-    graphicsPipelineCreateInfo.depth_stencil_state.enable_depth_write = false;
-    auto gridGraphicsPipeline = GraphicsPipeline::create(graphicsContext->device(), graphicsPipelineCreateInfo);
-    if (!gridGraphicsPipeline) {
-        return std::nullopt;
-    }
-
-    return Renderer(window, graphicsContext, std::move(graphicsPipeline.value()), std::move(gridGraphicsPipeline.value()), std::move(depthTarget.value()), std::move(mesh.value()), std::move(globalGridMesh.value()));
+    return Renderer(window, graphicsContext, std::move(graphicsPipeline.value()), std::move(depthTarget.value()), std::move(mesh.value()));
 }
 
 bool Renderer::renderFrame(const RenderFrameData& renderFrameData) {
@@ -317,8 +279,8 @@ std::optional<MeshHandle> Renderer::uploadMesh(const MeshData& data) {
     return _meshes.size();
 }
 
-Renderer::Renderer(SDL_Window* window, GraphicsContext* graphicsContext, GraphicsPipeline&& graphicsPipeline, GraphicsPipeline&& gridGraphicsPipeline, DepthTarget&& depthTarget, Mesh&& cubeMesh, Mesh&& globalGridMesh)
-    : _graphicsPipeline(std::move(graphicsPipeline)), _gridGraphicsPipeline(std::move(gridGraphicsPipeline)), _depthTarget(std::move(depthTarget)), _cubeMesh(std::move(cubeMesh)), _gridMesh(std::move(globalGridMesh)) {
+Renderer::Renderer(SDL_Window* window, GraphicsContext* graphicsContext, GraphicsPipeline&& graphicsPipeline, DepthTarget&& depthTarget, Mesh&& cubeMesh)
+    : _graphicsPipeline(std::move(graphicsPipeline)), _depthTarget(std::move(depthTarget)), _cubeMesh(std::move(cubeMesh)) {
     _window = window;
     _graphicsContext = graphicsContext;
 }

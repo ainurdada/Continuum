@@ -18,11 +18,9 @@ class Renderer {
     GraphicsContext* _graphicsContext{};
 
     GraphicsPipeline _graphicsPipeline;
-    GraphicsPipeline _gridGraphicsPipeline;
     DepthTarget _depthTarget;
 
     Mesh _cubeMesh;
-    Mesh _gridMesh;
 
     std::vector<Mesh> _meshes{};
 
@@ -36,7 +34,7 @@ class Renderer {
     std::optional<MeshHandle> uploadMesh(const MeshData& data);
 
   private:
-    Renderer(SDL_Window* window, GraphicsContext* graphicsContext, GraphicsPipeline&& graphicsPipeline, GraphicsPipeline&& gridGraphicsPipeline, DepthTarget&& depthTarget, Mesh&& cubeMesh, Mesh&& globalGridMesh);
+    Renderer(SDL_Window* window, GraphicsContext* graphicsContext, GraphicsPipeline&& graphicsPipeline, DepthTarget&& depthTarget, Mesh&& cubeMesh);
 };
 
 } // namespace engine::graphics

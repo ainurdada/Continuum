@@ -39,6 +39,7 @@ add_executable(
     include/ui/drawers/string_drawer.h
     include/snapshot_bootstrap.h
     src/play_session.cpp
+    src/editor_grid.cpp
 )
 
 continuum_link_modules(
