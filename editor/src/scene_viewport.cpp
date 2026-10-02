@@ -96,6 +96,8 @@ std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::dra
             frame.heightInt = static_cast<Uint32>(height);
             if (frame.widthInt >= 1 && frame.heightInt >= 1) {
                 if (!_sceneViewColorTarget.has_value()) {
+
+                    // create color target
                     auto newColorTarget = engine::graphics::ColorTarget::create(_device, frame.widthInt, frame.heightInt, _format);
                     if (newColorTarget.has_value()) {
                         _sceneViewColorTarget = std::move(newColorTarget);
@@ -103,6 +105,7 @@ std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::dra
                     } else {
                         error = "failed to create color target";
                     }
+
                 } else {
                     if (!_sceneViewColorTarget.value().resize(frame.widthInt, frame.heightInt)) {
                         error = "failed to resize color target";
@@ -110,9 +113,30 @@ std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::dra
                         sceneViewRenderable = true;
                     }
                 }
+
+                if (!_sceneViewDepthTarget.has_value()) {
+
+                    // create depth target
+                    auto newDepthTarget = engine::graphics::DepthTarget::create(_device, frame.widthInt, frame.heightInt);
+                    if (newDepthTarget.has_value()) {
+                        _sceneViewDepthTarget = std::move(newDepthTarget);
+                        sceneViewRenderable &= true;
+                    } else {
+                        error = "failed to create depth target";
+                        sceneViewRenderable = false;
+                    }
+
+                } else {
+                    if (!_sceneViewDepthTarget.value().resize(frame.widthInt, frame.heightInt)) {
+                        error = "failed to resize depth target";
+                        sceneViewRenderable = false;
+                    } else {
+                        sceneViewRenderable &= true;
+                    }
+                }
             }
         }
-        if (sceneViewRenderable && _sceneViewColorTarget.has_value()) {
+        if (sceneViewRenderable) {
             ImGui::Image(_sceneViewColorTarget.value().handle(), viewportSize);
             rectMin = ImGui::GetItemRectMin();
             rectSize = ImGui::GetItemRectSize();
@@ -269,6 +293,7 @@ std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::dra
         return {};
     }
     frame.texture = _sceneViewColorTarget->handle();
+    frame.depthTexture = _sceneViewDepthTarget->handle();
     return frame;
 }
 

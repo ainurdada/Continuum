@@ -31,7 +31,7 @@ class Renderer {
 
     bool renderFrame(const RenderFrameData& renderFrameData);
 
-    bool recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUTexture* colorTarget, Uint32 width, Uint32 height, const RenderFrameData& renderFrameData);
+    bool recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUTexture* colorTarget, SDL_GPUTexture* depthTarget, Uint32 width, Uint32 height, const RenderFrameData& renderFrameData);
 
     std::optional<MeshHandle> uploadMesh(const MeshData& data);
 

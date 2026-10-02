@@ -186,9 +186,15 @@ bool Renderer::renderFrame(const RenderFrameData& renderFrameData) {
         return true;
     }
 
+    // Resize depth target
+    if (!_depthTarget.resize(swapchainTextureWidth, swapchainTextureHeight)) {
+        validate(SDL_SubmitGPUCommandBuffer(commandBuffer), "Submit GPU command buffer error");
+        return false;
+    }
+
     // Record render pass
-    if (!recordRenderPass(commandBuffer, swapchainTexture, swapchainTextureWidth, swapchainTextureHeight, renderFrameData)) {
-        validate(SDL_CancelGPUCommandBuffer(commandBuffer), "Cancel GPU command buffer error");
+    if (!recordRenderPass(commandBuffer, swapchainTexture, _depthTarget.handle(), swapchainTextureWidth, swapchainTextureHeight, renderFrameData)) {
+        validate(SDL_SubmitGPUCommandBuffer(commandBuffer), "Submit GPU command buffer error");
         return false;
     }
 
@@ -200,7 +206,7 @@ bool Renderer::renderFrame(const RenderFrameData& renderFrameData) {
     return true;
 }
 
-bool Renderer::recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUTexture* colorTarget, Uint32 width, Uint32 height, const RenderFrameData& renderFrameData) {
+bool Renderer::recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUTexture* colorTarget, SDL_GPUTexture* depthTarget, Uint32 width, Uint32 height, const RenderFrameData& renderFrameData) {
     // initial validation
     if (!commandBuffer) {
         SDL_Log("command buffer is null");
@@ -219,13 +225,12 @@ bool Renderer::recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUText
         return false;
     }
 
-    // Resize depth target
-    if (!_depthTarget.resize(width, height)) {
-        return false;
-    }
-
     if (!renderFrameData.camera) {
         return true;
+    }
+
+    if (!depthTarget) {
+        return false;
     }
 
     // Create color target
@@ -237,10 +242,10 @@ bool Renderer::recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUText
 
     // Create depth stencil target
     SDL_GPUDepthStencilTargetInfo depthStencilTargetInfo{};
-    depthStencilTargetInfo.texture = _depthTarget.handle();
+    depthStencilTargetInfo.texture = depthTarget;
     depthStencilTargetInfo.clear_depth = 1.0;
     depthStencilTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
-    depthStencilTargetInfo.store_op = SDL_GPU_STOREOP_DONT_CARE;
+    depthStencilTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
     depthStencilTargetInfo.stencil_load_op = SDL_GPU_LOADOP_DONT_CARE;
     depthStencilTargetInfo.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
 

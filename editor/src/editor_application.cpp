@@ -527,8 +527,8 @@ int EditorApplication::run() {
 
                         if (swapchainTexture) {
                             if (viewportFrame.has_value()) {
-                                if (!renderer->recordRenderPass(commandBuffer, viewportFrame->texture, viewportFrame->widthInt, viewportFrame->heightInt, viewportFrame->rfd)) {
-                                    SDL_CancelGPUCommandBuffer(commandBuffer);
+                                if (!renderer->recordRenderPass(commandBuffer, viewportFrame->texture, viewportFrame->depthTexture, viewportFrame->widthInt, viewportFrame->heightInt, viewportFrame->rfd)) {
+                                    SDL_SubmitGPUCommandBuffer(commandBuffer);
                                     returnCode = 1;
                                     running = false;
                                     break;
