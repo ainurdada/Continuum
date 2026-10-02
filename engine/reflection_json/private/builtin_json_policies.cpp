@@ -208,6 +208,13 @@ std::expected<nlohmann::json, std::string> MeshRendererJsonPolicy::serialize(con
         return std::unexpected("Not supported geometry id");
     }
 
+    auto colorJson = Vec3fJsonPolicy::serialize(value.baseColor);
+    if (!colorJson) {
+        return std::unexpected(colorJson.error());
+    }
+
+    json.emplace("baseColor", colorJson.value());
+
     return json;
 }
 
@@ -216,7 +223,7 @@ std::expected<void, std::string> MeshRendererJsonPolicy::deserialize(const nlohm
         return std::unexpected("Mesh renderer json is not object");
     }
     if (!json.contains("geometry")) {
-        return std::unexpected("Mesh renderer json does not have \"geometry\" field");
+        return std::unexpected("Mesh renderer json does not have correct fields");
     }
 
     std::string geometryId;
@@ -225,15 +232,27 @@ std::expected<void, std::string> MeshRendererJsonPolicy::deserialize(const nlohm
         return std::unexpected(geometry.error());
     }
 
+    engine::scene::MeshRenderer result;
+
     if (geometryId == "cube") {
-        value = engine::scene::MeshRenderer{.geometryId = engine::GeometryId::Cube};
-        return {};
+        result = engine::scene::MeshRenderer{.geometryId = engine::GeometryId::Cube};
     } else if (geometryId == "UploadedMesh") {
-        value = engine::scene::MeshRenderer{.geometryId = engine::GeometryId::UploadedMesh};
-        return {};
+        result = engine::scene::MeshRenderer{.geometryId = engine::GeometryId::UploadedMesh};
     } else {
         return std::unexpected("Not supported geometry id");
     }
+
+    if (json.contains("baseColor")) {
+        auto colorResult = Vec3fJsonPolicy::deserialize(json.at("baseColor"), result.baseColor);
+
+        if (!colorResult) {
+            return std::unexpected(colorResult.error());
+        }
+    }
+
+    value = result;
+
+    return {};
 }
 
 std::expected<nlohmann::json, std::string> AssetIdJsonPolicy::serialize(const engine::asset::AssetID& value) {
@@ -252,6 +271,32 @@ std::expected<void, std::string> AssetIdJsonPolicy::deserialize(const nlohmann::
     }
 
     value = engine::asset::AssetID{.value = json.at("value").get<std::string>()};
+
+    return {};
+}
+
+std::expected<nlohmann::json, std::string> Vec3fJsonPolicy::serialize(const Vec3f& value) {
+    auto json = nlohmann::json::array();
+
+    json.push_back(value.x);
+    json.push_back(value.y);
+    json.push_back(value.z);
+
+    return json;
+}
+
+std::expected<void, std::string> Vec3fJsonPolicy::deserialize(const nlohmann::json& json, Vec3f& value) {
+    if (!json.is_array() || json.size() != 3) {
+        return std::unexpected("vec3f json is not correct array");
+    }
+
+    if (!json.at(0).is_number() || !json.at(1).is_number() || !json.at(2).is_number()) {
+        return std::unexpected("vec3f json has not correct elements");
+    }
+
+    value.x = json.at(0).get<float>();
+    value.y = json.at(1).get<float>();
+    value.z = json.at(2).get<float>();
 
     return {};
 }

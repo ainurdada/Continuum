@@ -6,6 +6,7 @@ add_library(
     private/hierarchy.cpp
     private/transform.cpp
     private/scene.cpp
+    private/render_scene.cpp
 )
 
 set_module_defaults(ContinuumEngine_Scene STATIC)

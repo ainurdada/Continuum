@@ -34,6 +34,7 @@ struct SceneViewportFrame {
     SDL_GPUTexture* texture;
     Uint32 widthInt{};
     Uint32 heightInt{};
+    bool drawGlobalGrid = false;
 };
 
 struct SceneViewportDrawData {

@@ -40,6 +40,11 @@ struct FloatJsonPolicy {
     static std::expected<void, std::string> deserialize(const nlohmann::json& json, float& value);
 };
 
+struct Vec3fJsonPolicy {
+    static std::expected<nlohmann::json, std::string> serialize(const Vec3f& value);
+    static std::expected<void, std::string> deserialize(const nlohmann::json& json, Vec3f& value);
+};
+
 struct TransformJsonPolicy {
     static std::expected<nlohmann::json, std::string> serialize(const engine::scene::Transform& value);
     static std::expected<void, std::string> deserialize(const nlohmann::json& json, engine::scene::Transform& value);

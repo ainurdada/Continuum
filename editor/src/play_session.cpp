@@ -8,6 +8,7 @@
 #include <scene/public/hierarchy.h>
 #include <scene/public/mesh_reference.h>
 #include <scene/public/mesh_renderer.h>
+#include <scene/public/render_scene.h>
 #include <scene/public/transform.h>
 
 #include <prepare_game.h>
@@ -39,65 +40,14 @@ void editor::PlaySession::update(float deltaTime) {
 }
 
 void editor::PlaySession::renderScene(engine::RenderFrameData& frame, const std::unordered_map<engine::asset::AssetID, std::vector<engine::graphics::MeshHandle>, engine::asset::AssetIDHash>& meshHandles) {
-    auto& transforms = _world.getStash<engine::scene::Transform>();
-    auto& meshRenderers = _world.getStash<engine::scene::MeshRenderer>();
-    auto& meshRefs = _world.getStash<engine::scene::MeshReference>();
-    auto& cameras = _world.getStash<engine::scene::Camera>();
+    engine::RenderFrameInput frameInput{
+        .world = _world,
+        .renderEntities = _world.query().with<engine::scene::MeshRenderer>().with<engine::scene::Transform>().build(),
+        .cameraEntities = _world.query().with<engine::scene::Camera>().with<engine::scene::Transform>().build(),
+        .meshHandles = meshHandles,
+    };
 
-    auto meshQuery = _world.query().with<engine::scene::MeshRenderer>().with<engine::scene::Transform>().build();
-    auto cameraQuery = _world.query().with<engine::scene::Camera>().with<engine::scene::Transform>().build();
-
-    for (auto entity : meshQuery.view()) {
-        auto transform = transforms.get(entity);
-        auto mesh = meshRenderers.get(entity);
-
-        engine::RenderItem item{};
-        item.geometryId = meshRenderers.get(entity)->geometryId;
-        auto worldMatrix = engine::scene::worldMatrix(_world, entity);
-        if (!worldMatrix) {
-            continue;
-        }
-        item.modelMatrix = worldMatrix.value();
-
-        switch (item.geometryId) {
-        case engine::GeometryId::UploadedMesh: {
-            auto meshRef = meshRefs.get(entity);
-            if (!meshRef || !meshHandles.contains(meshRef->modelId)) {
-                continue;
-            }
-            for (auto& meshhandle : meshHandles.at(meshRef->modelId)) {
-                auto newItem = item;
-                newItem.meshHandle = meshhandle;
-                frame.items.push_back(newItem);
-            }
-            continue;
-        }
-
-        default:
-            frame.items.push_back(item);
-            break;
-        }
-    }
-
-    for (auto entity : cameraQuery.view()) {
-        auto camera = cameras.get(entity);
-        auto transform = transforms.get(entity);
-        auto cameraMatrix = engine::scene::worldMatrix(_world, entity);
-        if (!cameraMatrix) {
-            continue;
-        }
-
-        engine::RenderCameraData rCamera{};
-        rCamera.verticalFovRadians = camera->verticalFov;
-        rCamera.nearPlane = camera->nearPlane;
-        rCamera.farPlane = camera->farPlane;
-        rCamera.viewMatrix = math::inverse(cameraMatrix.value());
-
-        frame.camera = rCamera;
-        break;
-    }
-
-    frame.drawGlobalGrid = false;
+    engine::collectRenderFrameData(frameInput, frame);
 }
 
 void editor::PlaySession::destroy() {

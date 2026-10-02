@@ -533,6 +533,26 @@ int EditorApplication::run() {
                                     running = false;
                                     break;
                                 }
+
+                                // draw global grid
+                                // if (renderFrameData.drawGlobalGrid) {
+                                //     // Bind grid pipeline
+                                //     SDL_BindGPUGraphicsPipeline(renderPass, _gridGraphicsPipeline.handle());
+                                //     transformUniform.model = math::identity();
+                                //     SDL_PushGPUVertexUniformData(commandBuffer, 0, &transformUniform, sizeof(TransformUniform));
+                                //     // Bind vertex buffer
+                                //     SDL_GPUBufferBinding vertexBufferBinding{};
+                                //     vertexBufferBinding.buffer = _gridMesh.vertexBufferHandle();
+                                //     vertexBufferBinding.offset = 0;
+                                //     SDL_BindGPUVertexBuffers(renderPass, 0, &vertexBufferBinding, 1);
+                                //     // Bind index buffer
+                                //     SDL_GPUBufferBinding indexBufferBinding{};
+                                //     indexBufferBinding.buffer = _gridMesh.indexBufferHandle();
+                                //     indexBufferBinding.offset = 0;
+                                //     SDL_BindGPUIndexBuffer(renderPass, &indexBufferBinding, SDL_GPU_INDEXELEMENTSIZE_32BIT);
+                                //     // Draw
+                                //     SDL_DrawGPUIndexedPrimitives(renderPass, _gridMesh.indexCount(), 1, 0, 0, 0);
+                                // }
                             }
                             ImGui_ImplSDLGPU3_PrepareDrawData(imDrawData, commandBuffer);
 

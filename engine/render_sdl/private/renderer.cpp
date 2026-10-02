@@ -224,6 +224,10 @@ bool Renderer::recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUText
         return false;
     }
 
+    if (!renderFrameData.camera) {
+        return true;
+    }
+
     // Create color target
     SDL_GPUColorTargetInfo colorTargetInfo{};
     colorTargetInfo.texture = colorTarget;
@@ -251,8 +255,8 @@ bool Renderer::recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUText
 
     // Send uniform data
     TransformUniform transformUniform{};
-    transformUniform.projection = math::perspective(renderFrameData.camera.verticalFovRadians, static_cast<float>(width) / static_cast<float>(height), renderFrameData.camera.nearPlane, renderFrameData.camera.farPlane);
-    transformUniform.view = renderFrameData.camera.viewMatrix;
+    transformUniform.projection = math::perspective(renderFrameData.camera->verticalFovRadians, static_cast<float>(width) / static_cast<float>(height), renderFrameData.camera->nearPlane, renderFrameData.camera->farPlane);
+    transformUniform.view = renderFrameData.camera->viewMatrix;
     for (const auto& item : renderFrameData.items) {
         transformUniform.model = item.modelMatrix;
         SDL_PushGPUVertexUniformData(commandBuffer, 0, &transformUniform, sizeof(TransformUniform));
@@ -291,26 +295,6 @@ bool Renderer::recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUText
 
         // Draw
         SDL_DrawGPUIndexedPrimitives(renderPass, mesh->indexCount(), 1, 0, 0, 0);
-    }
-
-    // draw global grid
-    if (renderFrameData.drawGlobalGrid) {
-        // Bind grid pipeline
-        SDL_BindGPUGraphicsPipeline(renderPass, _gridGraphicsPipeline.handle());
-        transformUniform.model = math::identity();
-        SDL_PushGPUVertexUniformData(commandBuffer, 0, &transformUniform, sizeof(TransformUniform));
-        // Bind vertex buffer
-        SDL_GPUBufferBinding vertexBufferBinding{};
-        vertexBufferBinding.buffer = _gridMesh.vertexBufferHandle();
-        vertexBufferBinding.offset = 0;
-        SDL_BindGPUVertexBuffers(renderPass, 0, &vertexBufferBinding, 1);
-        // Bind index buffer
-        SDL_GPUBufferBinding indexBufferBinding{};
-        indexBufferBinding.buffer = _gridMesh.indexBufferHandle();
-        indexBufferBinding.offset = 0;
-        SDL_BindGPUIndexBuffer(renderPass, &indexBufferBinding, SDL_GPU_INDEXELEMENTSIZE_32BIT);
-        // Draw
-        SDL_DrawGPUIndexedPrimitives(renderPass, _gridMesh.indexCount(), 1, 0, 0, 0);
     }
 
     // End render pass

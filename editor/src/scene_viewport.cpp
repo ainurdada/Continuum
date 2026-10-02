@@ -7,6 +7,7 @@
 #include <scene/public/hierarchy.h>
 #include <scene/public/mesh_reference.h>
 #include <scene/public/mesh_renderer.h>
+#include <scene/public/render_scene.h>
 #include <scene/public/scene_entity_id.h>
 
 #include <editor_session.h>
@@ -28,24 +29,30 @@ std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::dra
     auto& session = data.session;
     auto& ctx = data.ctx;
 
-    auto validCamera = [](const engine::RenderCameraData& camera) { return camera.nearPlane > 0 && camera.farPlane > camera.nearPlane && camera.verticalFovRadians > 0 && camera.verticalFovRadians < math::pi<float>(); };
+    auto validCamera = [](const std::optional<engine::RenderCameraData>& camera) { return camera.has_value() && camera->nearPlane > 0 && camera->farPlane > camera->nearPlane && camera->verticalFovRadians > 0 && camera->verticalFovRadians < math::pi<float>(); };
     std::string error{};
     ImGuiIO& io = ImGui::GetIO();
     bool gizmoIsActive = false;
     SceneViewportFrame frame{};
     if (!play) {
-        frame.rfd.drawGlobalGrid = true;
+        frame.drawGlobalGrid = true;
     }
     if (play) {
         frame.rfd.items = rfd.items;
     }
+
+    bool cameraFromEditor = false;
+    engine::RenderCameraData rCamera{};
     if (!play || !validCamera(rfd.camera)) {
-        frame.rfd.camera.verticalFovRadians = _editorCamera.verticalFov;
-        frame.rfd.camera.nearPlane = _editorCamera.nearPlane;
-        frame.rfd.camera.farPlane = _editorCamera.farPlane;
+        rCamera.verticalFovRadians = _editorCamera.verticalFov;
+        rCamera.nearPlane = _editorCamera.nearPlane;
+        rCamera.farPlane = _editorCamera.farPlane;
+        frame.rfd.camera = rCamera;
+        cameraFromEditor = true;
     } else {
         frame.rfd.camera = rfd.camera;
     }
+
     bool sceneViewRenderable = false;
     ImVec2 viewportSize{};
     ImVec2 rectMin{};
@@ -120,7 +127,7 @@ std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::dra
         if (_isActiveMouseLook && !ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
             stopMouseLook();
         }
-        if (!play || !validCamera(rfd.camera)) {
+        if (cameraFromEditor) {
             if (_isActiveMouseLook) {
                 _editorCameraTransform.rotation.y += io.MouseDelta.x * mouseSensitivity;
                 _editorCameraTransform.rotation.x += io.MouseDelta.y * mouseSensitivity;
@@ -152,7 +159,7 @@ std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::dra
                 }
                 _editorCameraTransform.position += desiredTranslation * cameraMoveSpeed * io.DeltaTime;
             }
-            frame.rfd.camera.viewMatrix = math::inverse(engine::scene::localMatrix(_editorCameraTransform));
+            rCamera.viewMatrix = math::inverse(engine::scene::localMatrix(_editorCameraTransform));
         }
     }
 
@@ -204,7 +211,7 @@ std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::dra
                     effectiveGizmoMode = ImGuizmo::LOCAL;
                 }
                 auto selectedSceneId = *sceneEntityIdStash.get(session.selectedEntity().value());
-                bool gizmoManipulated = ImGuizmo::Manipulate(glm::value_ptr(frame.rfd.camera.viewMatrix), glm::value_ptr(projection), _gizmoOperation, effectiveGizmoMode, glm::value_ptr(gizmoMatrix), nullptr, snap);
+                bool gizmoManipulated = ImGuizmo::Manipulate(glm::value_ptr(frame.rfd.camera->viewMatrix), glm::value_ptr(projection), _gizmoOperation, effectiveGizmoMode, glm::value_ptr(gizmoMatrix), nullptr, snap);
                 gizmoIsActive = ImGuizmo::IsUsing();
                 if (gizmoManipulated) {
                     engine::ecs::Entity manipulatedEntity = session.selectedEntity().value();
@@ -235,44 +242,18 @@ std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::dra
         }
         if (!play) {
 
-            auto& meshRendererStash = session.documentMut().worldMut().getStash<engine::scene::MeshRenderer>();
-            auto& meshRefStash = session.documentMut().worldMut().getStash<engine::scene::MeshReference>();
+            auto& world = data.session.documentMut().worldMut();
 
-            auto renderableEntityQuery = session.documentMut().worldMut().query().with<engine::scene::MeshRenderer>().with<engine::scene::Transform>().build();
+            engine::RenderFrameInput frameInput{
+                .world = world,
+                .renderEntities = world.query().with<engine::scene::MeshRenderer>().with<engine::scene::Transform>().build(),
+                .cameraEntities = world.query().with<engine::scene::Camera>().with<engine::scene::Transform>().build(),
+                .meshHandles = data.mesheHandles,
+            };
 
-            for (auto entity : renderableEntityQuery.view()) {
-                auto worldMatrix = engine::scene::worldMatrix(session.document().world(), entity);
-                if (!worldMatrix.has_value()) {
-                    SDL_Log("fail to get transform for entity(id: %u, generation: %u)", entity.index, entity.generation);
-                    continue;
-                }
-                auto meshRenderer = meshRendererStash.get(entity);
-                switch (meshRenderer->geometryId) {
+            engine::collectRenderFrameData(frameInput, frame.rfd);
 
-                case engine::GeometryId::UploadedMesh: {
-                    if (!meshRefStash.has(entity)) {
-                        SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Entity with engine::GeometryId::UploadedMesh must have mesh reference component");
-                        continue;
-                    }
-                    auto assetId = meshRefStash.get(entity)->modelId;
-                    if (!data.mesheHandles.contains(assetId)) {
-                        SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Not valid asset id");
-                        continue;
-                    }
-                    for (auto handle : data.mesheHandles.at(assetId)) {
-                        frame.rfd.items.push_back(engine::RenderItem{.geometryId = engine::GeometryId::UploadedMesh, .meshHandle = handle, .modelMatrix = worldMatrix.value()});
-                    }
-                } break;
-
-                case engine::GeometryId::Cube: {
-                    frame.rfd.items.push_back(engine::RenderItem{.geometryId = engine::GeometryId::Cube, .modelMatrix = worldMatrix.value()});
-                } break;
-
-                default:
-                    SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Not supported GeometryId");
-                    continue;
-                }
-            }
+            frame.rfd.camera = rCamera;
         }
     }
     ImGui::End();

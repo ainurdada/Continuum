@@ -16,6 +16,7 @@
 #include <reflection_json/public/scene_serializer_json.h>
 #include <runtime/public/runtime.h>
 #include <scene/public/camera.h>
+#include <scene/public/mesh_reference.h>
 #include <scene/public/mesh_renderer.h>
 #include <scene/public/scene_entity_id.h>
 #include <scene/scene.h>
@@ -164,6 +165,7 @@ Result renderGame(const void* appState, RenderFrameData& data) {
     const GameState& gameState = *static_cast<const GameState*>(appState);
     const engine::ecs::World& world = gameState.world;
     const auto* meshRendererStash = world.findStash<scene::MeshRenderer>();
+    const auto* meshRefStash = world.findStash<engine::scene::MeshReference>();
     const auto* cameraStash = world.findStash<scene::Camera>();
 
     if (!meshRendererStash || !cameraStash) {
@@ -178,10 +180,12 @@ Result renderGame(const void* appState, RenderFrameData& data) {
             return Result::Failure;
         }
         const auto* camera = cameraStash->get(entity);
-        data.camera.verticalFovRadians = camera->verticalFov;
-        data.camera.nearPlane = camera->nearPlane;
-        data.camera.farPlane = camera->farPlane;
-        data.camera.viewMatrix = math::inverse(getWorldMatrixResult.value());
+        engine::RenderCameraData rCamera{};
+        rCamera.verticalFovRadians = camera->verticalFov;
+        rCamera.nearPlane = camera->nearPlane;
+        rCamera.farPlane = camera->farPlane;
+        rCamera.viewMatrix = math::inverse(getWorldMatrixResult.value());
+        data.camera = rCamera;
         foundCameraCount++;
     }
     if (foundCameraCount != 1) {
@@ -202,7 +206,33 @@ Result renderGame(const void* appState, RenderFrameData& data) {
         }
 
         // Add item to render data
-        data.items.push_back(RenderItem{.geometryId = meshRenderer->geometryId, .modelMatrix = modelMatrix});
+        RenderItem ri;
+        ri.geometryId = meshRenderer->geometryId;
+        ri.modelMatrix = modelMatrix;
+        ri.baseColor = meshRenderer->baseColor;
+
+        switch (ri.geometryId) {
+
+        case engine::GeometryId::UploadedMesh: {
+            const auto* meshRef = meshRefStash->get(entity);
+            if (!meshRef) {
+                continue;
+            }
+            auto assetId = meshRef->modelId;
+            // if (!data.mesheHandles.contains(assetId)) {
+            //     SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "Not valid asset id");
+            //     continue;
+            // }
+            // for (auto handle : data.mesheHandles.at(assetId)) {
+            //     engine::RenderItem newRi = ri;
+            //     newRi.meshHandle = handle;
+            //     frame.rfd.items.push_back(std::move(newRi));
+            // }
+            continue;
+        }
+        }
+
+        // data.items.push_back(RenderItem{.geometryId =, .modelMatrix = modelMatrix, .baseColor = });
     }
 
     return Result::Continue;

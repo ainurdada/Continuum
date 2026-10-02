@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <optional>
 
 #include "mesh_data.h"
 #include <math/public/g_math.h>
@@ -23,11 +24,15 @@ struct RenderItem {
     GeometryId geometryId{};
     graphics::MeshHandle meshHandle = 0;
     Mat4f modelMatrix{};
+    Vec3f baseColor{
+        1,
+        1,
+        1,
+    };
 };
 
 struct RenderFrameData {
-    bool drawGlobalGrid = false;
-    RenderCameraData camera{};
+    std::optional<RenderCameraData> camera = std::nullopt;
     std::vector<RenderItem> items{};
 };
 
