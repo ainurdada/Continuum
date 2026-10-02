@@ -285,6 +285,36 @@ int EditorApplication::run() {
 
                     std::unordered_map<engine::asset::AssetID, std::vector<engine::graphics::MeshHandle>, engine::asset::AssetIDHash> meshHandles{};
 
+                    auto ensureModelUploaded = [&renderer, &meshHandles, this](engine::asset::AssetID assetId) -> std::expected<void, std::string> {
+                        if (meshHandles.contains(assetId)) {
+                            return {};
+                        }
+
+                        auto modelLoadResult = engine::asset::loadModel(_project.projectRoot, _assetRegistry, assetId);
+                        if (!modelLoadResult) {
+                            return std::unexpected(modelLoadResult.error());
+                        }
+
+                        if (modelLoadResult->meshes.empty()) {
+                            return std::unexpected("Empty meshes array");
+                        }
+
+                        std::vector<engine::graphics::MeshHandle> uploadedHandles{};
+                        uploadedHandles.reserve(modelLoadResult->meshes.size());
+
+                        for (auto& meshData : modelLoadResult->meshes) {
+                            auto newHandle = renderer->uploadMesh(meshData);
+                            if (!newHandle) {
+                                return std::unexpected("Failed to upload mesh data");
+                            }
+                            uploadedHandles.push_back(newHandle.value());
+                        }
+
+                        meshHandles.emplace(assetId, std::move(uploadedHandles));
+
+                        return {};
+                    };
+
                     auto& mesheReferences = _session->documentMut().worldMut().getStash<engine::scene::MeshReference>();
                     auto meshReferenceQuery = _session->documentMut().worldMut().query().with<engine::scene::MeshReference>().build();
                     if (renderer) {
@@ -295,21 +325,9 @@ int EditorApplication::run() {
                                 continue;
                             }
 
-                            auto loadlModeResult = engine::asset::loadModel(_project.projectRoot, _assetRegistry, assetId);
-                            if (loadlModeResult) {
-                                if (!loadlModeResult->meshes.empty()) {
-                                    meshHandles.emplace(assetId, std::vector<engine::graphics::MeshHandle>{});
-                                }
-
-                                for (auto& mesh : loadlModeResult->meshes) {
-                                    auto handle = renderer->uploadMesh(mesh);
-                                    if (handle) {
-                                        meshHandles.at(assetId).push_back(handle.value());
-                                    }
-                                }
-
-                            } else {
-                                SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "%s", loadlModeResult.error().c_str());
+                            auto modelUploaded = ensureModelUploaded(assetId);
+                            if (!modelUploaded) {
+                                SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "%s", modelUploaded.error().c_str());
                             }
                         }
                     }
@@ -426,15 +444,25 @@ int EditorApplication::run() {
                                 auto entity = _session->selectedEntity().value();
                                 auto& world = _session->documentMut().worldMut();
                                 if (assetInfo && world.hasEntity(entity)) {
-                                    auto& meshes = world.getStash<engine::scene::MeshReference>();
-                                    if (meshes.has(entity)) {
-                                        if (meshes.get(entity)->modelId != assetInfo->desc.id) {
-                                            meshes.getMut(entity)->modelId = assetInfo->desc.id;
+                                    auto uploadresult = ensureModelUploaded(assetInfo->desc.id);
+                                    if (!uploadresult) {
+                                        SDL_LogError(SDL_LogCategory::SDL_LOG_CATEGORY_ERROR, "%s", uploadresult.error().c_str());
+                                    } else {
+                                        auto& refs = world.getStash<engine::scene::MeshReference>();
+                                        auto& meshRenders = world.getStash<engine::scene::MeshRenderer>();
+                                        if (meshRenders.has(entity) && meshRenders.get(entity)->geometryId != engine::GeometryId::UploadedMesh) {
+                                            meshRenders.getMut(entity)->geometryId = engine::GeometryId::UploadedMesh;
                                             _session->documentMut().markDirty();
                                         }
-                                    } else {
-                                        meshes.add(entity, engine::scene::MeshReference{.modelId = assetInfo->desc.id});
-                                        _session->documentMut().markDirty();
+                                        if (refs.has(entity)) {
+                                            if (refs.get(entity)->modelId != assetInfo->desc.id) {
+                                                refs.getMut(entity)->modelId = assetInfo->desc.id;
+                                                _session->documentMut().markDirty();
+                                            }
+                                        } else {
+                                            refs.add(entity, engine::scene::MeshReference{.modelId = assetInfo->desc.id});
+                                            _session->documentMut().markDirty();
+                                        }
                                     }
                                 }
                             }
