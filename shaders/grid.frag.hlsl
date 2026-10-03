@@ -1,4 +1,5 @@
 float4 main() : SV_Target0
 {
-    return float4(0.5, 0.5, 0.5, 1.0);
+    // Muted blue grid; bright cyan remains an interaction accent.
+    return float4(26.0 / 255.0, 82.0 / 255.0, 109.0 / 255.0, 1.0);
 }

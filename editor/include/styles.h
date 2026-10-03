@@ -4,95 +4,111 @@
 
 namespace editor::styles {
 
+inline ImVec4 color(unsigned int rgb, float alpha = 1.0f) {
+    constexpr float toFloat = 1.0f / 255.0f;
+
+    return ImVec4(
+        static_cast<float>((rgb >> 16) & 0xFF) * toFloat,
+        static_cast<float>((rgb >> 8) & 0xFF) * toFloat,
+        static_cast<float>(rgb & 0xFF) * toFloat,
+        alpha
+    );
+}
+
 inline void setDarkPastelImGuiStyle() {
+    ImGui::StyleColorsDark();
+
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
-    // Backgrounds
-    colors[ImGuiCol_WindowBg] = ImVec4(0.12f, 0.13f, 0.15f, 1.00f); // Dark grey base
-    colors[ImGuiCol_ChildBg] = ImVec4(0.14f, 0.15f, 0.17f, 1.00f);
-    colors[ImGuiCol_PopupBg] = ImVec4(0.10f, 0.10f, 0.12f, 0.95f);
-    colors[ImGuiCol_Border] = ImVec4(0.30f, 0.33f, 0.42f, 0.40f);
+    // Surfaces
+    colors[ImGuiCol_WindowBg]             = color(0x0D121B);
+    colors[ImGuiCol_ChildBg]              = color(0x0A0F17);
+    colors[ImGuiCol_PopupBg]              = color(0x121925);
+    colors[ImGuiCol_MenuBarBg]            = color(0x070A10);
+    colors[ImGuiCol_DockingEmptyBg]       = color(0x070A10);
 
-    // Text
-    colors[ImGuiCol_Text] = ImVec4(0.90f, 0.93f, 0.95f, 1.00f);
-    colors[ImGuiCol_TextDisabled] = ImVec4(0.60f, 0.65f, 0.70f, 1.00f);
+    // Text and borders
+    colors[ImGuiCol_Text]                 = color(0xEAF3F5);
+    colors[ImGuiCol_TextDisabled]         = color(0x8999A8);
+    colors[ImGuiCol_Border]               = color(0x2A3542, 0.70f);
+    colors[ImGuiCol_BorderShadow]         = color(0x000000, 0.00f);
 
-    // Headers
-    colors[ImGuiCol_Header] = ImVec4(0.36f, 0.42f, 0.55f, 0.60f);
-    colors[ImGuiCol_HeaderHovered] = ImVec4(0.44f, 0.50f, 0.68f, 0.80f);
-    colors[ImGuiCol_HeaderActive] = ImVec4(0.46f, 0.55f, 0.75f, 1.00f);
+    // Input fields
+    colors[ImGuiCol_FrameBg]              = color(0x171F2C);
+    colors[ImGuiCol_FrameBgHovered]       = color(0x202B3A);
+    colors[ImGuiCol_FrameBgActive]        = color(0x2A394B);
 
     // Buttons
-    colors[ImGuiCol_Button] = ImVec4(0.28f, 0.34f, 0.48f, 0.70f);
-    colors[ImGuiCol_ButtonHovered] = ImVec4(0.36f, 0.45f, 0.65f, 0.85f);
-    colors[ImGuiCol_ButtonActive] = ImVec4(0.40f, 0.50f, 0.70f, 1.00f);
+    colors[ImGuiCol_Button]               = color(0x171F2C);
+    colors[ImGuiCol_ButtonHovered]        = color(0x223044);
+    colors[ImGuiCol_ButtonActive]         = color(0x2B3D53);
 
-    // Frames
-    colors[ImGuiCol_FrameBg] = ImVec4(0.20f, 0.22f, 0.28f, 1.00f);
-    colors[ImGuiCol_FrameBgHovered] = ImVec4(0.28f, 0.32f, 0.42f, 1.00f);
-    colors[ImGuiCol_FrameBgActive] = ImVec4(0.32f, 0.38f, 0.50f, 1.00f);
+    // Selected items and tree nodes
+    colors[ImGuiCol_Header]               = color(0x182431);
+    colors[ImGuiCol_HeaderHovered]        = color(0x223448);
+    colors[ImGuiCol_HeaderActive]         = color(0x2B4054);
 
     // Tabs
-    colors[ImGuiCol_Tab] = ImVec4(0.26f, 0.30f, 0.42f, 0.80f);
-    colors[ImGuiCol_TabHovered] = ImVec4(0.36f, 0.42f, 0.58f, 1.00f);
-    colors[ImGuiCol_TabActive] = ImVec4(0.42f, 0.50f, 0.68f, 1.00f);
-    colors[ImGuiCol_TabUnfocused] = ImVec4(0.20f, 0.24f, 0.32f, 0.80f);
-    colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.30f, 0.36f, 0.50f, 1.00f);
+    colors[ImGuiCol_Tab]                  = color(0x0A1019);
+    colors[ImGuiCol_TabHovered]           = color(0x223448);
+    colors[ImGuiCol_TabActive]            = color(0x1B2D3F);
+    colors[ImGuiCol_TabUnfocused]         = color(0x080D14);
+    colors[ImGuiCol_TabUnfocusedActive]   = color(0x141F2D);
 
-    // Titles
-    colors[ImGuiCol_TitleBg] = ImVec4(0.20f, 0.25f, 0.30f, 1.00f);
-    colors[ImGuiCol_TitleBgActive] = ImVec4(0.25f, 0.30f, 0.40f, 1.00f);
-    colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.10f, 0.12f, 0.15f, 0.75f);
+    // Window titles
+    colors[ImGuiCol_TitleBg]              = color(0x090E16);
+    colors[ImGuiCol_TitleBgActive]        = color(0x14202E);
+    colors[ImGuiCol_TitleBgCollapsed]     = color(0x070A10);
 
     // Scrollbars
-    colors[ImGuiCol_ScrollbarBg] = ImVec4(0.13f, 0.14f, 0.18f, 1.00f);
-    colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.25f, 0.30f, 0.38f, 0.60f);
-    colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.35f, 0.40f, 0.50f, 0.80f);
-    colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.45f, 0.50f, 0.65f, 1.00f);
+    colors[ImGuiCol_ScrollbarBg]          = color(0x0A0F17);
+    colors[ImGuiCol_ScrollbarGrab]        = color(0x283544);
+    colors[ImGuiCol_ScrollbarGrabHovered] = color(0x394A5E);
+    colors[ImGuiCol_ScrollbarGrabActive]  = color(0x52687E);
 
-    // Checkboxes / Radios
-    colors[ImGuiCol_CheckMark] = ImVec4(0.80f, 0.85f, 1.00f, 1.00f);
+    // Accent controls
+    colors[ImGuiCol_CheckMark]            = color(0x39C9ED);
+    colors[ImGuiCol_SliderGrab]           = color(0x329FBE);
+    colors[ImGuiCol_SliderGrabActive]     = color(0x39C9ED);
 
-    // Sliders
-    colors[ImGuiCol_SliderGrab] = ImVec4(0.50f, 0.65f, 0.90f, 1.00f);
-    colors[ImGuiCol_SliderGrabActive] = ImVec4(0.60f, 0.75f, 1.00f, 1.00f);
+    // Resize grips
+    colors[ImGuiCol_ResizeGrip]           = color(0x2A3542, 0.35f);
+    colors[ImGuiCol_ResizeGripHovered]    = color(0x39C9ED, 0.60f);
+    colors[ImGuiCol_ResizeGripActive]     = color(0x39C9ED, 0.90f);
 
-    // Resize Grip
-    colors[ImGuiCol_ResizeGrip] = ImVec4(0.30f, 0.40f, 0.50f, 0.60f);
-    colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.40f, 0.50f, 0.60f, 0.80f);
-    colors[ImGuiCol_ResizeGripActive] = ImVec4(0.50f, 0.60f, 0.80f, 1.00f);
+    // Separators
+    colors[ImGuiCol_Separator]            = color(0x2A3542, 0.65f);
+    colors[ImGuiCol_SeparatorHovered]     = color(0x329FBE);
+    colors[ImGuiCol_SeparatorActive]      = color(0x39C9ED);
 
-    // Separator
-    colors[ImGuiCol_Separator] = ImVec4(0.35f, 0.40f, 0.48f, 0.7f);
-    colors[ImGuiCol_SeparatorHovered] = ImVec4(0.50f, 0.60f, 0.72f, 0.9f);
-    colors[ImGuiCol_SeparatorActive] = ImVec4(0.65f, 0.70f, 0.85f, 1.0f);
+    // Selection and docking
+    colors[ImGuiCol_TextSelectedBg]       = color(0x39C9ED, 0.28f);
+    colors[ImGuiCol_DragDropTarget]       = color(0x39C9ED, 0.90f);
+    colors[ImGuiCol_DockingPreview]       = color(0x39C9ED, 0.28f);
+    colors[ImGuiCol_ModalWindowDimBg]     = color(0x000000, 0.65f);
 
-    // Menus and Tooltips
-    colors[ImGuiCol_MenuBarBg] = ImVec4(0.14f, 0.15f, 0.17f, 1.00f);
-    // colors[ImGuiCol_TooltipBg]          = ImVec4(0.18f, 0.20f, 0.25f, 0.95f);
-
-    // Drag & Drop
-    colors[ImGuiCol_DragDropTarget] = ImVec4(0.50f, 0.85f, 1.00f, 0.90f);
-
-    // Style Metrics
-    style.WindowRounding = 8.0f;
-    style.ChildRounding = 6.0f;
-    style.FrameRounding = 5.0f;
+    // Shape and spacing
+    style.WindowRounding = 7.0f;
+    style.ChildRounding = 5.0f;
+    style.FrameRounding = 4.0f;
     style.PopupRounding = 6.0f;
-    style.ScrollbarRounding = 5.0f;
+    style.ScrollbarRounding = 6.0f;
     style.GrabRounding = 4.0f;
-    style.TabRounding = 5.0f;
+    style.TabRounding = 3.0f;
 
-    style.WindowBorderSize = 0.0f;
+    style.WindowBorderSize = 1.0f;
+    style.ChildBorderSize = 0.0f;
     style.FrameBorderSize = 0.0f;
     style.PopupBorderSize = 1.0f;
 
-    style.WindowPadding = ImVec2(16, 16);
-    style.FramePadding = ImVec2(10, 6);
-    style.ItemSpacing = ImVec2(10, 10);
-    style.ItemInnerSpacing = ImVec2(6, 4);
+    style.WindowPadding = ImVec2(14.0f, 12.0f);
+    style.FramePadding = ImVec2(9.0f, 5.0f);
+    style.ItemSpacing = ImVec2(9.0f, 7.0f);
+    style.ItemInnerSpacing = ImVec2(6.0f, 4.0f);
     style.IndentSpacing = 20.0f;
+    style.ScrollbarSize = 12.0f;
+    style.GrabMinSize = 10.0f;
 }
 
 } // namespace editor::styles

@@ -198,7 +198,7 @@ bool Renderer::recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUText
     // Create color target
     SDL_GPUColorTargetInfo colorTargetInfo{};
     colorTargetInfo.texture = colorTarget;
-    colorTargetInfo.clear_color = SDL_FColor{0.00647, 0, 0.0858, 1};
+    colorTargetInfo.clear_color = SDL_FColor{9.0f / 255.0f, 15.0f / 255.0f, 24.0f / 255.0f, 1.0f};
     colorTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
     colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
 
