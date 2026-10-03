@@ -71,7 +71,7 @@ std::optional<Renderer> Renderer::create(SDL_Window* window, GraphicsContext* gr
     ShaderLoadInfo fragmentShaderInfo{};
     fragmentShaderInfo.name = "default.frag";
     fragmentShaderInfo.shaderStage = ShaderStage::Fragment;
-    fragmentShaderInfo.numUniformBuffers = 0;
+    fragmentShaderInfo.numUniformBuffers = 1;
     auto fragmentShader = Shader::load(graphicsContext->device(), fragmentShaderInfo);
     if (!fragmentShader) {
         return std::nullopt;
@@ -227,6 +227,7 @@ bool Renderer::recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUText
     for (const auto& item : renderFrameData.items) {
         transformUniform.model = item.modelMatrix;
         SDL_PushGPUVertexUniformData(commandBuffer, 0, &transformUniform, sizeof(TransformUniform));
+        SDL_PushGPUFragmentUniformData(commandBuffer, 0, &item.baseColor, sizeof(Vec3f));
 
         const Mesh* mesh = nullptr;
         switch (item.geometryId) {
@@ -279,8 +280,7 @@ std::optional<MeshHandle> Renderer::uploadMesh(const MeshData& data) {
     return _meshes.size();
 }
 
-Renderer::Renderer(SDL_Window* window, GraphicsContext* graphicsContext, GraphicsPipeline&& graphicsPipeline, DepthTarget&& depthTarget, Mesh&& cubeMesh)
-    : _graphicsPipeline(std::move(graphicsPipeline)), _depthTarget(std::move(depthTarget)), _cubeMesh(std::move(cubeMesh)) {
+Renderer::Renderer(SDL_Window* window, GraphicsContext* graphicsContext, GraphicsPipeline&& graphicsPipeline, DepthTarget&& depthTarget, Mesh&& cubeMesh) : _graphicsPipeline(std::move(graphicsPipeline)), _depthTarget(std::move(depthTarget)), _cubeMesh(std::move(cubeMesh)) {
     _window = window;
     _graphicsContext = graphicsContext;
 }
