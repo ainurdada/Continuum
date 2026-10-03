@@ -8,6 +8,8 @@ namespace engine::scene {
 OBJECT(Component)
 struct MeshRenderer {
     GeometryId geometryId{};
+
+    FIELD(ShowInInspector)
     Vec3f baseColor{1, 1, 1};
 };
 

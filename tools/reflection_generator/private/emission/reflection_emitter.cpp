@@ -58,6 +58,9 @@ std::string emitNativeTypeKey(const TypeRefModel& ref) {
     if (std::holds_alternative<RecordTypeRefModel>(ref.target)) {
         return "typeid(::" + std::get<RecordTypeRefModel>(ref.target).qualifiedName + ")";
     }
+    if (std::holds_alternative<ExternalKind>(ref.target)) {
+        return "typeid(::" + std::get<ExternalKind>(ref.target).qualifiedName + ")";
+    }
     throw std::runtime_error("Uknown type");
 }
 
@@ -221,6 +224,7 @@ std::string emitReflectionSource(const std::vector<TypeModel>& typeModels, const
     command += "#include <engine/reflection/public/builtin_types.h>\n";
     command += "#include <engine/reflection/public/modifiers.h>\n";
     command += "#include <engine/reflection/public/object_view.h>\n";
+    command += "#include <engine/math/public/g_math.h>\n";
 
     command += "\n";
 
@@ -258,7 +262,8 @@ std::string emitReflectionBootstrapSource(const std::vector<std::string>& module
     command += "#include <span>\n";
     command += "#include <engine/reflection/public/builtin_types.h>\n";
     command += "#include <engine/reflection/public/type_registry.h>\n\n";
-    command += "#include <engine/reflection/public/bootstrap.h>\n\n";
+    command += "#include <engine/reflection/public/bootstrap.h>\n";
+    command += "#include <engine/math/public/math_types_desc.h>\n\n";
 
     for (auto& moduleName : moduleNames) {
         command += "namespace engine::reflection::generated::module_" + moduleName + " {\n";
@@ -273,6 +278,11 @@ std::string emitReflectionBootstrapSource(const std::vector<std::string>& module
     command += "            return false;\n";
     command += "        }\n";
     command += "    }\n\n";
+
+    command += "    if (!reg.registerType(engine::reflection::vec3fType())){\n";
+    command += "        return false;\n";
+    command += "    }\n\n";
+
     for (auto& moduleName : moduleNames) {
         command += "    for (auto& type : engine::reflection::generated::module_" + moduleName + "::getTypes()) {\n";
         command += "        if (!reg.registerType(type)) {\n";

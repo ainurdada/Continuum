@@ -4,6 +4,7 @@
 
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/DeclTemplate.h>
+#include <clang/Basic/IdentifierTable.h>
 
 namespace {
 
@@ -77,7 +78,30 @@ bool isStdString(const clang::CXXRecordDecl& decl) {
     return true;
 }
 
+bool isVec3f(clang::QualType type, clang::ASTContext& ctx) {
+    auto aliasType = type.getCanonicalType().getUnqualifiedType();
+
+    auto lookupResult = ctx.getTranslationUnitDecl()->lookup(clang::DeclarationName(&ctx.Idents.get("Vec3f")));
+
+    bool declFound = false;
+    for (const auto& decl : lookupResult) {
+        auto alias = llvm::dyn_cast<clang::TypeAliasDecl>(decl);
+        if (!alias) {
+            continue;
+        }
+
+        auto originType = alias->getUnderlyingType().getCanonicalType().getUnqualifiedType();
+
+        if (ctx.hasSameType(originType, aliasType)) {
+            declFound = true;
+            break;
+        }
+    }
+
+    return declFound;
 }
+
+} // namespace
 
 TypeRefModel analyzeType(const clang::QualType& type, const std::set<clang::CXXRecordDecl*>& availableClasses) {
     TypeRefModel result{};
@@ -88,6 +112,10 @@ TypeRefModel analyzeType(const clang::QualType& type, const std::set<clang::CXXR
     if (const auto* record = canonicalType->getAsCXXRecordDecl()) {
         if (isStdString(*record)) {
             result.target = BuiltinKind::String;
+        } else if (isVec3f(type, record->getASTContext())) {
+            ExternalKind exKind{};
+            exKind.qualifiedName = "Vec3f";
+            result.target = exKind;
         } else {
             auto recordDef = record->getDefinition();
             if (recordDef && availableClasses.contains(recordDef)) {

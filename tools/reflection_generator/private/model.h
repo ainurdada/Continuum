@@ -1,11 +1,11 @@
 #pragma once
 
-#include <string>
-#include <vector>
-#include <optional>
 #include <cstdint>
+#include <optional>
+#include <string>
 #include <type_traits>
 #include <variant>
+#include <vector>
 
 enum class Access {
     Private,
@@ -56,9 +56,13 @@ struct RecordTypeRefModel {
     std::string qualifiedName;
 };
 
+struct ExternalKind {
+    std::string qualifiedName;
+};
+
 struct TypeRefModel {
     std::string spelling;
-    std::variant<std::monostate, BuiltinKind, RecordTypeRefModel> target;
+    std::variant<std::monostate, BuiltinKind, RecordTypeRefModel, ExternalKind> target;
     Qualifier qualifiers = Qualifier::None;
 };
 

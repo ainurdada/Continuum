@@ -11,4 +11,5 @@ target_link_libraries(
     ContinuumEngine_Math
     PUBLIC
     glm::glm
+    ContinuumEngine_Reflection
 )
