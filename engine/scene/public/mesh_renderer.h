@@ -9,7 +9,7 @@ OBJECT(Component)
 struct MeshRenderer {
     GeometryId geometryId{};
 
-    FIELD(ShowInInspector)
+    FIELD(ShowInInspector, Step(0.01f), Min(0), Max(1))
     Vec3f baseColor{1, 1, 1};
 };
 

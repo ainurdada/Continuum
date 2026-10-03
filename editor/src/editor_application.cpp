@@ -36,6 +36,7 @@
 #include <ui/drawers/int_drawer.h>
 #include <ui/drawers/string_drawer.h>
 #include <ui/drawers/transform_drawer.h>
+#include <ui/drawers/vec3f_drawer.h>
 
 namespace editor {
 
@@ -216,6 +217,11 @@ int EditorApplication::run() {
 
     if (!_componentDrawers.registerDrawer<editor::ui::StringDrawer>()) {
         std::cerr << "Failed to register string drawer";
+        return 1;
+    }
+
+    if (!_componentDrawers.registerDrawer<editor::ui::Vec3fDrawer>()) {
+        std::cerr << "Failed to register vec3f drawer";
         return 1;
     }
 

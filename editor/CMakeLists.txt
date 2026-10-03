@@ -35,6 +35,7 @@ add_executable(
     include/ui/drawers/bool_drawer.h
     include/ui/drawers/int_drawer.h
     include/ui/drawers/double_drawer.h
+    include/ui/drawers/vec3f_drawer.h
     include/ui/modifierHelpers.h
     include/ui/drawers/string_drawer.h
     include/snapshot_bootstrap.h
