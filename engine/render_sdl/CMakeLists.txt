@@ -9,6 +9,7 @@ add_library(
     private/mesh.cpp
     private/renderer.cpp
     private/shader.cpp
+    private/vertex_layout.cpp
 )
 
 set_module_defaults(ContinuumEngine_RenderSdl STATIC)

@@ -90,16 +90,42 @@ std::expected<void, std::string> writeMeshCache(std::filesystem::path cachePath,
     for (auto& mesh : meshes) {
         nlohmann::json meshJson = nlohmann::json::object();
 
-        nlohmann::json verticesJson = nlohmann::json::array();
-        for (auto& vertex : mesh.positionVertices) {
-            nlohmann::json vertexJson = nlohmann::json::array();
-            vertexJson.push_back(vertex.x);
-            vertexJson.push_back(vertex.y);
-            vertexJson.push_back(vertex.z);
-
-            verticesJson.push_back(vertexJson);
+        nlohmann::json bytesJson = nlohmann::json::array();
+        for (auto& byte : mesh.vertices.data) {
+            bytesJson.push_back(byte);
         }
-        meshJson["positions"] = verticesJson;
+        meshJson["vertexBytes"] = bytesJson;
+
+        meshJson["verticesCount"] = mesh.vertices.verticesCount;
+        meshJson["pitch"] = mesh.vertices.pitch;
+
+        nlohmann::json attributesJson = nlohmann::json::array();
+        for (auto& desc : mesh.vertices.descs) {
+            nlohmann::json descJson = nlohmann::json::object();
+            descJson["location"] = desc.location;
+            descJson["offset"] = desc.offset;
+
+            switch (desc.format) {
+            case engine::graphics::VertexAttributeFormat::Float:
+                descJson["format"] = "Float";
+                break;
+
+            case engine::graphics::VertexAttributeFormat::Float2:
+                descJson["format"] = "Float2";
+                break;
+
+            case engine::graphics::VertexAttributeFormat::Float3:
+                descJson["format"] = "Float3";
+                break;
+
+            case engine::graphics::VertexAttributeFormat::Float4:
+                descJson["format"] = "Float4";
+                break;
+            }
+
+            attributesJson.push_back(descJson);
+        }
+        meshJson["attributes"] = attributesJson;
 
         nlohmann::json indicesJson = nlohmann::json::array();
         for (auto& index : mesh.indices) {
@@ -114,6 +140,13 @@ std::expected<void, std::string> writeMeshCache(std::filesystem::path cachePath,
 
     return writeJsonToCahceFile(cachePath, json);
 }
+
+const std::unordered_map<std::string, engine::graphics::VertexAttributeFormat> strToVertextFromat = {
+    {"Float", engine::graphics::VertexAttributeFormat::Float},
+    {"Float2", engine::graphics::VertexAttributeFormat::Float2},
+    {"Float3", engine::graphics::VertexAttributeFormat::Float3},
+    {"Float4", engine::graphics::VertexAttributeFormat::Float4},
+};
 
 std::expected<std::vector<graphics::MeshData>, std::string> readMeshCache(std::filesystem::path cachePath) {
     auto cacheJsonResult = getCachedJson(cachePath);
@@ -133,27 +166,56 @@ std::expected<std::vector<graphics::MeshData>, std::string> readMeshCache(std::f
     std::vector<graphics::MeshData> result;
 
     for (auto& [key, meshJson] : cacheJson.at("meshes").items()) {
-        if (!meshJson.contains("positions") || !meshJson.at("positions").is_array()) {
-            return std::unexpected("Missing positions");
+        if (!meshJson.contains("vertexBytes") || !meshJson.at("vertexBytes").is_array()) {
+            return std::unexpected("Missing vertexBytes");
         }
 
         graphics::MeshData mesh{};
 
-        for (auto& posJson : meshJson.at("positions").items()) {
-            if (!posJson.value().is_array() || posJson.value().size() != 3) {
-                return std::unexpected("Not valid positions");
+        for (auto& bytesJson : meshJson.at("vertexBytes").items()) {
+            if (!bytesJson.value().is_number_unsigned()) {
+                return std::unexpected("Not valid vertexBytes");
             }
+            mesh.vertices.data.push_back(bytesJson.value().get<std::byte>());
+        }
 
-            if (!posJson.value()[0].is_number_float() || !posJson.value()[1].is_number_float() || !posJson.value()[2].is_number_float()) {
-                return std::unexpected("Not valid positions type");
+        if (!meshJson.contains("verticesCount") || !meshJson.at("verticesCount").is_number_unsigned()) {
+            return std::unexpected("Missing verticesCount");
+        }
+        mesh.vertices.verticesCount = meshJson["verticesCount"].get<std::size_t>();
+
+        if (!meshJson.contains("pitch") || !meshJson.at("pitch").is_number_unsigned()) {
+            return std::unexpected("Missing pitch");
+        }
+        mesh.vertices.pitch = meshJson["pitch"].get<std::size_t>();
+
+        if (!meshJson.contains("attributes") || !meshJson.at("attributes").is_array()) {
+            return std::unexpected("Missing attributes");
+        }
+
+        for (auto& [_, descJson] : meshJson.at("attributes").items()) {
+            engine::graphics::VertexAttributeDescription desc{};
+
+            if (!descJson.contains("format") || !descJson.at("format").is_string()) {
+                return std::unexpected("Missing format");
             }
+            std::string format = descJson.at("format").get<std::string>();
+            if (!strToVertextFromat.contains(format)) {
+                return std::unexpected("Missing format");
+            }
+            desc.format = strToVertextFromat.at(format);
 
-            graphics::PositionVertex pos{};
-            pos.x = posJson.value()[0].get<float>();
-            pos.y = posJson.value()[1].get<float>();
-            pos.z = posJson.value()[2].get<float>();
+            if (!descJson.contains("location") || !descJson.at("location").is_number_unsigned()) {
+                return std::unexpected("Missing location");
+            }
+            desc.location = descJson.at("location").get<std::size_t>();
 
-            mesh.positionVertices.push_back(pos);
+            if (!descJson.contains("offset") || !descJson.at("offset").is_number_unsigned()) {
+                return std::unexpected("Missing offset");
+            }
+            desc.offset = descJson.at("offset").get<std::size_t>();
+
+            mesh.vertices.descs.push_back(desc);
         }
 
         if (!meshJson.contains("indices") || !meshJson.at("indices").is_array()) {

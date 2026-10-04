@@ -1,32 +1,49 @@
 #include "renderer.h"
 
+#include <unordered_map>
+
 #include "shader.h"
 #include <math/public/g_math.h>
 #include <sdl_support/public/validation.h>
+#include <vertex_layout.h>
 
 namespace engine::graphics {
 
+namespace {
+struct CubeVertex {
+    Vec3f position;
+};
+
 // clang-format off
-const MeshData cubeMeshData{
-    .positionVertices = {
-        PositionVertex{-0.5, -0.5, -0.5},
-        PositionVertex{-0.5, 0.5, -0.5},
-        PositionVertex{0.5, 0.5, -0.5},
-        PositionVertex{0.5, -0.5, -0.5},
-        PositionVertex{-0.5, -0.5, 0.5},
-        PositionVertex{-0.5, 0.5, 0.5},
-        PositionVertex{0.5, 0.5, 0.5},
-        PositionVertex{0.5, -0.5, 0.5}
-    },
-    .indices = {
+MeshData cubeMeshData() {
+    std::vector<CubeVertex> vertices = {
+        CubeVertex{ Vec3f{-0.5, -0.5, -0.5} },
+        CubeVertex{ Vec3f{-0.5, 0.5, -0.5} },
+        CubeVertex{ Vec3f{0.5, 0.5, -0.5} },
+        CubeVertex{ Vec3f{0.5, -0.5, -0.5} },
+        CubeVertex{ Vec3f{-0.5, -0.5, 0.5} },
+        CubeVertex{ Vec3f{-0.5, 0.5, 0.5} },
+        CubeVertex{ Vec3f{0.5, 0.5, 0.5} },
+        CubeVertex{ Vec3f{0.5, -0.5, 0.5} },
+    };
+
+    std::vector<VertexAttributeDescription> descs = {
+        VertexAttributeDescription{0, VertexAttributeFormat::Float3, 0}
+    };
+
+    MeshData data;
+    data.vertices = makeVerticesData<CubeVertex>(vertices, descs);
+    data.indices = {
         0, 1, 2,  0, 2, 3,
         4, 6, 5,  4, 7, 6,
         0, 4, 5,  0, 5, 1,
         3, 2, 6,  3, 6, 7,
         0, 3, 7,  0, 7, 4,
         1, 5, 6,  1, 6, 2
-    }
-};
+    };
+
+    return data;
+}
 // clang-format on
 
 // clang-format off
@@ -39,9 +56,12 @@ struct TransformUniform {
 
 static_assert(sizeof(TransformUniform) == 192);
 
+} // namespace
+
 std::optional<Renderer> Renderer::create(SDL_Window* window, GraphicsContext* graphicsContext) {
     // Load cube mesh
-    auto mesh = Mesh::load(graphicsContext->device(), cubeMeshData);
+    auto cube = cubeMeshData();
+    auto mesh = Mesh::load(graphicsContext->device(), cube);
     if (!mesh) {
         return std::nullopt;
     }
@@ -84,24 +104,20 @@ std::optional<Renderer> Renderer::create(SDL_Window* window, GraphicsContext* gr
     colorTargetDescription.blend_state = {};
 
     // Create graphics pipeline
+    auto attributes = convertVertexAttributeToSDL(cube.vertices.descs);
     SDL_GPUVertexBufferDescription vertexBufferDescription{};
     vertexBufferDescription.slot = 0;
-    vertexBufferDescription.pitch = sizeof(PositionVertex);
+    vertexBufferDescription.pitch = cube.vertices.pitch;
     vertexBufferDescription.input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX;
     vertexBufferDescription.instance_step_rate = 0;
-    SDL_GPUVertexAttribute vertexAttribute{};
-    vertexAttribute.location = 0;
-    vertexAttribute.buffer_slot = 0;
-    vertexAttribute.format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
-    vertexAttribute.offset = 0;
     SDL_GPUGraphicsPipelineCreateInfo graphicsPipelineCreateInfo{};
     graphicsPipelineCreateInfo.vertex_shader = vertexShader->handle();
     graphicsPipelineCreateInfo.fragment_shader = fragmentShader->handle();
     graphicsPipelineCreateInfo.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
     graphicsPipelineCreateInfo.vertex_input_state.vertex_buffer_descriptions = &vertexBufferDescription;
     graphicsPipelineCreateInfo.vertex_input_state.num_vertex_buffers = 1;
-    graphicsPipelineCreateInfo.vertex_input_state.vertex_attributes = &vertexAttribute;
-    graphicsPipelineCreateInfo.vertex_input_state.num_vertex_attributes = 1;
+    graphicsPipelineCreateInfo.vertex_input_state.vertex_attributes = attributes.data();
+    graphicsPipelineCreateInfo.vertex_input_state.num_vertex_attributes = attributes.size();
     graphicsPipelineCreateInfo.rasterizer_state.fill_mode = SDL_GPU_FILLMODE_FILL;
     graphicsPipelineCreateInfo.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_NONE;
     graphicsPipelineCreateInfo.rasterizer_state.front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE;

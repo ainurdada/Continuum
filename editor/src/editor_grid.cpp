@@ -3,6 +3,7 @@
 #include <render/public/mesh_data.h>
 #include <render_sdl/public/depth_target.h>
 #include <render_sdl/public/shader.h>
+#include <render_sdl/public/vertex_layout.h>
 #include <sdl_support/public/validation.h>
 
 namespace editor {
@@ -17,17 +18,25 @@ struct TransformUniform {
 
 engine::graphics::MeshData createGlobalGridMeshData(int halfCellCount, float spacingMeters) {
     engine::graphics::MeshData grid{};
+    std::vector<Vec3f> positionVertices{};
+
     for (int i = -halfCellCount; i <= halfCellCount; i++) {
-        std::uint32_t currentIndex = static_cast<std::uint32_t>(grid.positionVertices.size());
-        grid.positionVertices.push_back(engine::graphics::PositionVertex{-halfCellCount * spacingMeters, 0, i * spacingMeters});
-        grid.positionVertices.push_back(engine::graphics::PositionVertex{halfCellCount * spacingMeters, 0, i * spacingMeters});
-        grid.positionVertices.push_back(engine::graphics::PositionVertex{i * spacingMeters, 0, -halfCellCount * spacingMeters});
-        grid.positionVertices.push_back(engine::graphics::PositionVertex{i * spacingMeters, 0, halfCellCount * spacingMeters});
+        std::uint32_t currentIndex = static_cast<std::uint32_t>(positionVertices.size());
+        positionVertices.push_back(Vec3f{-halfCellCount * spacingMeters, 0, i * spacingMeters});
+        positionVertices.push_back(Vec3f{halfCellCount * spacingMeters, 0, i * spacingMeters});
+        positionVertices.push_back(Vec3f{i * spacingMeters, 0, -halfCellCount * spacingMeters});
+        positionVertices.push_back(Vec3f{i * spacingMeters, 0, halfCellCount * spacingMeters});
         grid.indices.push_back(currentIndex);
         grid.indices.push_back(currentIndex + 1);
         grid.indices.push_back(currentIndex + 2);
         grid.indices.push_back(currentIndex + 3);
     }
+
+    std::vector<engine::graphics::VertexAttributeDescription> descs = {
+        engine::graphics::VertexAttributeDescription{.location = 0, .format = engine::graphics::VertexAttributeFormat::Float3, .offset = 0},
+    };
+
+    grid.vertices = engine::graphics::makeVerticesData<Vec3f>(positionVertices, descs);
     return grid;
 }
 
@@ -37,7 +46,8 @@ EditorGrid::EditorGrid(std::unique_ptr<engine::graphics::Mesh>& mesh, std::uniqu
 
 std::optional<EditorGrid> EditorGrid::create(SDL_GPUDevice* device, SDL_GPUTextureFormat colorTergetFormat) {
     // Load global grid
-    auto globalGridMesh = engine::graphics::Mesh::load(device, createGlobalGridMeshData(20, 1));
+    auto grid = createGlobalGridMeshData(20, 1);
+    auto globalGridMesh = engine::graphics::Mesh::load(device, grid);
     if (!globalGridMesh) {
         return std::nullopt;
     }
@@ -67,24 +77,20 @@ std::optional<EditorGrid> EditorGrid::create(SDL_GPUDevice* device, SDL_GPUTextu
     colorTargetDescription.blend_state = {};
 
     // Create graphics pipeline
+    auto attributes = engine::graphics::convertVertexAttributeToSDL(grid.vertices.descs);
     SDL_GPUVertexBufferDescription vertexBufferDescription{};
     vertexBufferDescription.slot = 0;
-    vertexBufferDescription.pitch = sizeof(PositionVertex);
+    vertexBufferDescription.pitch = grid.vertices.pitch;
     vertexBufferDescription.input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX;
     vertexBufferDescription.instance_step_rate = 0;
-    SDL_GPUVertexAttribute vertexAttribute{};
-    vertexAttribute.location = 0;
-    vertexAttribute.buffer_slot = 0;
-    vertexAttribute.format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
-    vertexAttribute.offset = 0;
     SDL_GPUGraphicsPipelineCreateInfo graphicsPipelineCreateInfo{};
     graphicsPipelineCreateInfo.vertex_shader = vertexShader->handle();
     graphicsPipelineCreateInfo.fragment_shader = gridFragmentShader.value().handle();
     graphicsPipelineCreateInfo.primitive_type = SDL_GPU_PRIMITIVETYPE_LINELIST;
     graphicsPipelineCreateInfo.vertex_input_state.vertex_buffer_descriptions = &vertexBufferDescription;
     graphicsPipelineCreateInfo.vertex_input_state.num_vertex_buffers = 1;
-    graphicsPipelineCreateInfo.vertex_input_state.vertex_attributes = &vertexAttribute;
-    graphicsPipelineCreateInfo.vertex_input_state.num_vertex_attributes = 1;
+    graphicsPipelineCreateInfo.vertex_input_state.vertex_attributes = attributes.data();
+    graphicsPipelineCreateInfo.vertex_input_state.num_vertex_attributes = attributes.size();
     graphicsPipelineCreateInfo.rasterizer_state.fill_mode = SDL_GPU_FILLMODE_FILL;
     graphicsPipelineCreateInfo.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_NONE;
     graphicsPipelineCreateInfo.rasterizer_state.front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE;

@@ -41,7 +41,7 @@ Mesh::~Mesh() {
 
 std::optional<Mesh> Mesh::load(SDL_GPUDevice* device, const MeshData& meshData) {
     // get data sizes
-    Uint32 vertexBytes = meshData.positionVertexBytes();
+    Uint32 vertexBytes = meshData.vertices.data.size();
     Uint32 indexBytes = meshData.indexBytes();
     Uint32 numIndices = meshData.indices.size();
 
@@ -100,7 +100,7 @@ std::optional<Mesh> Mesh::load(SDL_GPUDevice* device, const MeshData& meshData) 
         SDL_ReleaseGPUTransferBuffer(device, indexUploadBuffer);
         return std::nullopt;
     }
-    SDL_memcpy(mappedVertexBuffer, meshData.positionVertices.data(), vertexBytes);
+    SDL_memcpy(mappedVertexBuffer, meshData.vertices.data.data(), vertexBytes);
     SDL_UnmapGPUTransferBuffer(device, vertexUploadBuffer);
 
     // Map index data

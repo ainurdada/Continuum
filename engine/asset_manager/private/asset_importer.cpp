@@ -7,6 +7,8 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
+#include <math/public/g_math.h>
+
 namespace engine::asset::import {
 
 std::expected<std::vector<engine::graphics::MeshData>, std::string> loadMeshes(std::filesystem::path file) {
@@ -23,11 +25,16 @@ std::expected<std::vector<engine::graphics::MeshData>, std::string> loadMeshes(s
 
         engine::graphics::MeshData data;
 
+        std::vector<Vec3f> positions{};
+        std::vector<engine::graphics::VertexAttributeDescription> descs = {
+            engine::graphics::VertexAttributeDescription{.location = 0, .format = engine::graphics::VertexAttributeFormat::Float3, .offset = 0},
+        };
         for (unsigned int j = 0; j < mesh->mNumVertices; j++) {
             auto vertex = mesh->mVertices + j;
-            engine::graphics::PositionVertex pos{.x = vertex->x, .y = vertex->y, .z = vertex->z};
-            data.positionVertices.push_back(pos);
+            positions.push_back({vertex->x, vertex->y, vertex->z});
         }
+
+        data.vertices = engine::graphics::makeVerticesData<Vec3f>(positions, descs);
 
         for (unsigned int j = 0; j < mesh->mNumFaces; j++) {
             auto face = mesh->mFaces + j;
