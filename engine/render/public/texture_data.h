@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace engine::graphics {
+namespace engine::render {
 
 /// @brief Texture contains RGBA8 data
 struct TextureData {

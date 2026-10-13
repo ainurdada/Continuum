@@ -19,9 +19,9 @@ struct EngineState {
     void* gameState{};
 
     SDL_Window* window{};
-    std::optional<engine::graphics::GraphicsContext> graphicsContext;
+    std::optional<engine::render::GraphicsContext> renderContext;
 
-    std::optional<engine::graphics::Renderer> renderer;
+    std::optional<engine::render::Renderer> renderer;
 
     Uint64 previousFrameTime{};
 
@@ -61,7 +61,7 @@ engine::Result toEngineResult(SDL_AppResult result) {
     return engine::Result::Failure;
 }
 
-using namespace engine::graphics;
+using namespace engine::render;
 
 } // namespace
 
@@ -84,14 +84,14 @@ SDL_AppResult SDL_AppInit(void** rawEngineState, int argc, char* argv[]) {
         return SDL_APP_FAILURE;
     }
 
-    // Create graphics context
-    engineState->graphicsContext = GraphicsContext::create(engineState->window);
-    if (!engineState->graphicsContext) {
+    // Create render context
+    engineState->renderContext = GraphicsContext::create(engineState->window);
+    if (!engineState->renderContext) {
         return SDL_APP_FAILURE;
     }
 
     // Create renderer
-    engineState->renderer = Renderer::create(engineState->window, &engineState->graphicsContext.value());
+    engineState->renderer = Renderer::create(engineState->window, &engineState->renderContext.value());
     if (!engineState->renderer) {
         return SDL_APP_FAILURE;
     }
@@ -205,9 +205,9 @@ void SDL_AppQuit(void* rawEngineState, SDL_AppResult sdlResult) {
         engineState->renderer.reset();
     }
 
-    // Release graphics context
-    if (engineState->graphicsContext) {
-        engineState->graphicsContext.reset();
+    // Release render context
+    if (engineState->renderContext) {
+        engineState->renderContext.reset();
     }
 
     // Destroy Main Window

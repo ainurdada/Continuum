@@ -39,7 +39,7 @@ void editor::PlaySession::update(float deltaTime) {
     }
 }
 
-void editor::PlaySession::renderScene(engine::RenderFrameData& frame, const std::unordered_map<engine::asset::AssetID, std::vector<engine::graphics::MeshHandle>, engine::asset::AssetIDHash>& meshHandles) {
+void editor::PlaySession::renderScene(engine::RenderFrameData& frame, const std::unordered_map<engine::asset::AssetID, std::vector<engine::render::MeshHandle>, engine::asset::AssetIDHash>& meshHandles) {
     engine::RenderFrameInput frameInput{
         .world = _world,
         .renderEntities = _world.query().with<engine::scene::MeshRenderer>().with<engine::scene::Transform>().build(),

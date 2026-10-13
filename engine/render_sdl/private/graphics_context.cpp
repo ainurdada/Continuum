@@ -1,9 +1,9 @@
 #include "graphics_context.h"
 
-#include <sdl_support/public/validation.h>
 #include <graphics_platform.h>
+#include <sdl_support/public/validation.h>
 
-namespace engine::graphics {
+namespace engine::render {
 
 GraphicsContext::GraphicsContext(GraphicsContext&& other) noexcept {
     _window = other._window;
@@ -54,7 +54,7 @@ SDL_GPUDevice* GraphicsContext::device() const noexcept {
     return _device;
 }
 
-GraphicsContext::GraphicsContext(SDL_GPUDevice* device, SDL_Window* window){
+GraphicsContext::GraphicsContext(SDL_GPUDevice* device, SDL_Window* window) {
     _window = window;
     _device = device;
 }
@@ -70,4 +70,4 @@ void GraphicsContext::release() {
     _device = nullptr;
 }
 
-} // namespace engine::graphics
+} // namespace engine::render

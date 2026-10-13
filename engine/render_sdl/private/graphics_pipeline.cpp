@@ -2,7 +2,7 @@
 
 #include <sdl_support/public/validation.h>
 
-namespace engine::graphics {
+namespace engine::render {
 
 GraphicsPipeline::GraphicsPipeline(GraphicsPipeline&& other) noexcept {
     _device = other._device;
@@ -59,4 +59,4 @@ void GraphicsPipeline::release() {
     _device = nullptr;
 }
 
-} // namespace engine::graphics
+} // namespace engine::render

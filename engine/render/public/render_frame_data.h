@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
 #include <optional>
+#include <vector>
 
 #include "mesh_data.h"
 #include <math/public/g_math.h>
@@ -22,7 +22,7 @@ enum class GeometryId {
 
 struct RenderItem {
     GeometryId geometryId{};
-    graphics::MeshHandle meshHandle = 0;
+    render::MeshHandle meshHandle = 0;
     Mat4f modelMatrix{};
     Vec3f baseColor{
         1,

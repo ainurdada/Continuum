@@ -43,7 +43,7 @@ struct SceneViewportDrawData {
     EditorSession& session;
     engine::ecs_reflection::WorldReflectionContext& ctx;
     engine::RenderFrameData& rfd;
-    std::unordered_map<engine::asset::AssetID, std::vector<engine::graphics::MeshHandle>, engine::asset::AssetIDHash>& mesheHandles;
+    std::unordered_map<engine::asset::AssetID, std::vector<engine::render::MeshHandle>, engine::asset::AssetIDHash>& mesheHandles;
     bool play;
 };
 
@@ -61,8 +61,8 @@ class SceneViewport {
     ImGuizmo::OPERATION _gizmoOperation = ImGuizmo::TRANSLATE;
     ImGuizmo::MODE _gizmoMode = ImGuizmo::WORLD;
 
-    std::optional<engine::graphics::ColorTarget> _sceneViewColorTarget = std::nullopt;
-    std::optional<engine::graphics::DepthTarget> _sceneViewDepthTarget = std::nullopt;
+    std::optional<engine::render::ColorTarget> _sceneViewColorTarget = std::nullopt;
+    std::optional<engine::render::DepthTarget> _sceneViewDepthTarget = std::nullopt;
 
   public:
     // radians per one mouse motion unit

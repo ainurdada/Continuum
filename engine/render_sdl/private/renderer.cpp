@@ -7,7 +7,7 @@
 #include <sdl_support/public/validation.h>
 #include <vertex_layout.h>
 
-namespace engine::graphics {
+namespace engine::render {
 
 namespace {
 struct CubeVertex {
@@ -79,7 +79,7 @@ std::optional<Renderer> Renderer::create(SDL_Window* window, GraphicsContext* gr
     }
 
     // Create shaders
-    using namespace engine::graphics;
+    using namespace engine::render;
     ShaderLoadInfo vertexShaderInfo{};
     vertexShaderInfo.name = "default.vert";
     vertexShaderInfo.shaderStage = ShaderStage::Vertex;
@@ -141,6 +141,10 @@ std::optional<Renderer> Renderer::create(SDL_Window* window, GraphicsContext* gr
 }
 
 bool Renderer::renderFrame(const RenderFrameData& renderFrameData) {
+    if (!renderFrameData.camera) {
+        return true;
+    }
+
     // Create command buffer
     SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(_graphicsContext->device());
     if (!validate(commandBuffer, "Acquire GPU command buffer error")) {
@@ -170,8 +174,19 @@ bool Renderer::renderFrame(const RenderFrameData& renderFrameData) {
         return false;
     }
 
+    // Create view
+    PerspectiveOptions perspective{};
+    perspective.fov = renderFrameData.camera->verticalFovRadians;
+    perspective.nearPlane = renderFrameData.camera->nearPlane;
+    perspective.farPlane = renderFrameData.camera->farPlane;
+    auto view = View::create(renderFrameData.camera->viewMatrix, perspective, swapchainTextureWidth, swapchainTextureHeight);
+    if (!view) {
+        validate(SDL_SubmitGPUCommandBuffer(commandBuffer), "Submit GPU command buffer error");
+        return false;
+    }
+
     // Record render pass
-    if (!recordRenderPass(commandBuffer, swapchainTexture, _depthTarget.handle(), swapchainTextureWidth, swapchainTextureHeight, renderFrameData)) {
+    if (!recordRenderPass(commandBuffer, swapchainTexture, _depthTarget.handle(), swapchainTextureWidth, swapchainTextureHeight, renderFrameData, view.value())) {
         validate(SDL_SubmitGPUCommandBuffer(commandBuffer), "Submit GPU command buffer error");
         return false;
     }
@@ -184,7 +199,7 @@ bool Renderer::renderFrame(const RenderFrameData& renderFrameData) {
     return true;
 }
 
-bool Renderer::recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUTexture* colorTarget, SDL_GPUTexture* depthTarget, Uint32 width, Uint32 height, const RenderFrameData& renderFrameData) {
+bool Renderer::recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUTexture* colorTarget, SDL_GPUTexture* depthTarget, Uint32 width, Uint32 height, const RenderFrameData& renderFrameData, const View& view) {
     // initial validation
     if (!commandBuffer) {
         SDL_Log("command buffer is null");
@@ -201,10 +216,6 @@ bool Renderer::recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUText
     if (height == 0) {
         SDL_Log("height is not greater than 0");
         return false;
-    }
-
-    if (!renderFrameData.camera) {
-        return true;
     }
 
     if (!depthTarget) {
@@ -238,8 +249,8 @@ bool Renderer::recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUText
 
     // Send uniform data
     TransformUniform transformUniform{};
-    transformUniform.projection = math::perspective(renderFrameData.camera->verticalFovRadians, static_cast<float>(width) / static_cast<float>(height), renderFrameData.camera->nearPlane, renderFrameData.camera->farPlane);
-    transformUniform.view = renderFrameData.camera->viewMatrix;
+    transformUniform.projection = view.projectionMatrix();
+    transformUniform.view = view.viewMatrix();
     for (const auto& item : renderFrameData.items) {
         transformUniform.model = item.modelMatrix;
         SDL_PushGPUVertexUniformData(commandBuffer, 0, &transformUniform, sizeof(TransformUniform));
@@ -301,4 +312,4 @@ Renderer::Renderer(SDL_Window* window, GraphicsContext* graphicsContext, Graphic
     _graphicsContext = graphicsContext;
 }
 
-} // namespace engine::graphics
+} // namespace engine::render

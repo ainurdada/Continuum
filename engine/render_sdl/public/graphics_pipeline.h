@@ -3,7 +3,7 @@
 #include <SDL3/SDL_gpu.h>
 #include <optional>
 
-namespace engine::graphics {
+namespace engine::render {
 
 class GraphicsPipeline {
   private:
@@ -30,4 +30,4 @@ class GraphicsPipeline {
     void release();
 };
 
-} // namespace engine::graphics
+} // namespace engine::render

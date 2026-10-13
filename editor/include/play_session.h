@@ -26,7 +26,7 @@ class PlaySession {
     std::expected<void, std::string> run(const nlohmann::json& sceneJson, engine::reflection::TypeRegistry& typeReg, engine::reflection::serialization::JsonSerializationRegistry& policies, engine::ecs_reflection::ComponentBindingRegistry& bindings);
 
     void update(float deltaTime);
-    void renderScene(engine::RenderFrameData& frame, const std::unordered_map<engine::asset::AssetID, std::vector<engine::graphics::MeshHandle>, engine::asset::AssetIDHash>& meshHandles);
+    void renderScene(engine::RenderFrameData& frame, const std::unordered_map<engine::asset::AssetID, std::vector<engine::render::MeshHandle>, engine::asset::AssetIDHash>& meshHandles);
     void destroy();
 
     ~PlaySession();

@@ -5,7 +5,7 @@
 
 #include <render/public/mesh_data.h>
 
-namespace engine::graphics {
+namespace engine::render {
 
 class Mesh {
   private:
@@ -36,4 +36,4 @@ class Mesh {
     void release();
 };
 
-} // namespace engine::graphics
+} // namespace engine::render

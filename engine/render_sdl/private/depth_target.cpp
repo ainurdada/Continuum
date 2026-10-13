@@ -2,7 +2,7 @@
 
 #include <sdl_support/public/validation.h>
 
-namespace engine::graphics {
+namespace engine::render {
 
 DepthTarget::DepthTarget(DepthTarget&& other) noexcept {
     _device = other._device;
@@ -82,7 +82,7 @@ SDL_GPUTexture* DepthTarget::handle() const noexcept {
     return _depthTexture;
 }
 
-DepthTarget::DepthTarget(SDL_GPUDevice* device, SDL_GPUTexture* depthTexture, Uint32 width, Uint32 height){
+DepthTarget::DepthTarget(SDL_GPUDevice* device, SDL_GPUTexture* depthTexture, Uint32 width, Uint32 height) {
     _device = device;
     _depthTexture = depthTexture;
     _width = width;
@@ -99,4 +99,4 @@ void DepthTarget::release() {
     _height = 0;
 }
 
-} // namespace engine::graphics
+} // namespace engine::render

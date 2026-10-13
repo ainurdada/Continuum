@@ -2,7 +2,7 @@
 
 #include <SDL3/SDL_gpu.h>
 
-namespace engine::graphics {
+namespace engine::render {
 
 #ifdef _WIN32
 constexpr char const* fileExtension = ".dxil";
@@ -16,4 +16,4 @@ constexpr SDL_GPUShaderFormat shaderFormat = SDL_GPU_SHADERFORMAT_MSL;
 #error
 #endif
 
-} // namespace engine::graphics
+} // namespace engine::render

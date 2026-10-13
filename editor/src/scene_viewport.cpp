@@ -98,7 +98,7 @@ std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::dra
                 if (!_sceneViewColorTarget.has_value()) {
 
                     // create color target
-                    auto newColorTarget = engine::graphics::ColorTarget::create(_device, frame.widthInt, frame.heightInt, _format);
+                    auto newColorTarget = engine::render::ColorTarget::create(_device, frame.widthInt, frame.heightInt, _format);
                     if (newColorTarget.has_value()) {
                         _sceneViewColorTarget = std::move(newColorTarget);
                         sceneViewRenderable = true;
@@ -117,7 +117,7 @@ std::expected<std::optional<SceneViewportFrame>, std::string> SceneViewport::dra
                 if (!_sceneViewDepthTarget.has_value()) {
 
                     // create depth target
-                    auto newDepthTarget = engine::graphics::DepthTarget::create(_device, frame.widthInt, frame.heightInt);
+                    auto newDepthTarget = engine::render::DepthTarget::create(_device, frame.widthInt, frame.heightInt);
                     if (newDepthTarget.has_value()) {
                         _sceneViewDepthTarget = std::move(newDepthTarget);
                         sceneViewRenderable &= true;

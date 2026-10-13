@@ -9,8 +9,9 @@
 #include "mesh.h"
 #include <render/public/mesh_data.h>
 #include <render/public/render_frame_data.h>
+#include <render/public/view.h>
 
-namespace engine::graphics {
+namespace engine::render {
 
 class Renderer {
   private:
@@ -29,7 +30,7 @@ class Renderer {
 
     bool renderFrame(const RenderFrameData& renderFrameData);
 
-    bool recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUTexture* colorTarget, SDL_GPUTexture* depthTarget, Uint32 width, Uint32 height, const RenderFrameData& renderFrameData);
+    bool recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUTexture* colorTarget, SDL_GPUTexture* depthTarget, Uint32 width, Uint32 height, const RenderFrameData& renderFrameData, const View& view);
 
     std::optional<MeshHandle> uploadMesh(const MeshData& data);
 
@@ -37,4 +38,4 @@ class Renderer {
     Renderer(SDL_Window* window, GraphicsContext* graphicsContext, GraphicsPipeline&& graphicsPipeline, DepthTarget&& depthTarget, Mesh&& cubeMesh);
 };
 
-} // namespace engine::graphics
+} // namespace engine::render

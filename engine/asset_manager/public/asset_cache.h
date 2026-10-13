@@ -12,10 +12,10 @@ namespace engine::asset::cache {
 
 bool isCacheUpToDate(std::filesystem::path originFile, std::filesystem::path cacheFile);
 
-std::expected<void, std::string> writeMeshCache(std::filesystem::path cachePath, const std::vector<graphics::MeshData>& meshes);
-std::expected<std::vector<graphics::MeshData>, std::string> readMeshCache(std::filesystem::path cachePath);
+std::expected<void, std::string> writeMeshCache(std::filesystem::path cachePath, const std::vector<render::MeshData>& meshes);
+std::expected<std::vector<render::MeshData>, std::string> readMeshCache(std::filesystem::path cachePath);
 
-std::expected<void, std::string> writeTextureCache(std::filesystem::path cachePath, const graphics::TextureData& texture);
-std::expected<graphics::TextureData, std::string> readTextureCache(std::filesystem::path cachePath);
+std::expected<void, std::string> writeTextureCache(std::filesystem::path cachePath, const render::TextureData& texture);
+std::expected<render::TextureData, std::string> readTextureCache(std::filesystem::path cachePath);
 
 } // namespace engine::asset::cache

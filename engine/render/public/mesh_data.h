@@ -7,7 +7,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace engine::graphics {
+namespace engine::render {
 
 enum class VertexAttributeFormat {
     Float,
@@ -55,4 +55,4 @@ struct MeshData {
     }
 };
 
-} // namespace engine::graphics
+} // namespace engine::render

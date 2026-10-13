@@ -3,9 +3,8 @@
 #include <SDL3/SDL_gpu.h>
 #include <optional>
 
-namespace engine::graphics
-{
-    
+namespace engine::render {
+
 class ColorTarget {
   private:
     SDL_GPUDevice* _device{};
@@ -15,7 +14,6 @@ class ColorTarget {
     SDL_GPUTextureFormat _format{};
 
   public:
-
     ColorTarget(const ColorTarget&) = delete;
     ColorTarget& operator=(const ColorTarget&) = delete;
 
@@ -37,4 +35,4 @@ class ColorTarget {
     void release();
 };
 
-} // namespace engine::graphics
+} // namespace engine::render

@@ -259,8 +259,8 @@ int EditorApplication::run() {
         // scan project assets
         scanProjectFiles();
 
-        auto graphicsContext = engine::graphics::GraphicsContext::create(window);
-        if (graphicsContext) {
+        auto renderContext = engine::render::GraphicsContext::create(window);
+        if (renderContext) {
 
             IMGUI_CHECKVERSION();
             ImGuiContext* imguiCtx = ImGui::CreateContext();
@@ -273,31 +273,31 @@ int EditorApplication::run() {
 
             if (ImGui_ImplSDL3_InitForSDLGPU(window)) {
                 ImGui_ImplSDLGPU3_InitInfo initInfo{};
-                initInfo.Device = graphicsContext->device();
-                initInfo.ColorTargetFormat = SDL_GetGPUSwapchainTextureFormat(graphicsContext->device(), window);
+                initInfo.Device = renderContext->device();
+                initInfo.ColorTargetFormat = SDL_GetGPUSwapchainTextureFormat(renderContext->device(), window);
 
                 if (ImGui_ImplSDLGPU3_Init(&initInfo)) {
                     bool dockLayoutInitialized = false;
                     bool running = true;
 
                     // Viewport
-                    editor::SceneViewport viewport{window, graphicsContext->device(), initInfo.ColorTargetFormat};
+                    editor::SceneViewport viewport{window, renderContext->device(), initInfo.ColorTargetFormat};
 
                     // Renderer
-                    auto renderer = engine::graphics::Renderer::create(window, &graphicsContext.value());
+                    auto renderer = engine::render::Renderer::create(window, &renderContext.value());
                     if (!renderer) {
                         returnCode = 1;
                         running = false;
                     }
 
                     // Editor grid
-                    auto grid = EditorGrid::create(graphicsContext->device(), initInfo.ColorTargetFormat);
+                    auto grid = EditorGrid::create(renderContext->device(), initInfo.ColorTargetFormat);
                     if (!grid) {
                         returnCode = 1;
                         running = false;
                     }
 
-                    std::unordered_map<engine::asset::AssetID, std::vector<engine::graphics::MeshHandle>, engine::asset::AssetIDHash> meshHandles{};
+                    std::unordered_map<engine::asset::AssetID, std::vector<engine::render::MeshHandle>, engine::asset::AssetIDHash> meshHandles{};
 
                     auto ensureModelUploaded = [&renderer, &meshHandles, this](engine::asset::AssetID assetId) -> std::expected<void, std::string> {
                         if (meshHandles.contains(assetId)) {
@@ -313,7 +313,7 @@ int EditorApplication::run() {
                             return std::unexpected("Empty meshes array");
                         }
 
-                        std::vector<engine::graphics::MeshHandle> uploadedHandles{};
+                        std::vector<engine::render::MeshHandle> uploadedHandles{};
                         uploadedHandles.reserve(modelLoadResult->meshes.size());
 
                         for (auto& meshData : modelLoadResult->meshes) {
@@ -522,7 +522,7 @@ int EditorApplication::run() {
 
                         ImDrawData* imDrawData = ImGui::GetDrawData();
 
-                        auto commandBuffer = SDL_AcquireGPUCommandBuffer(graphicsContext->device());
+                        auto commandBuffer = SDL_AcquireGPUCommandBuffer(renderContext->device());
                         if (!commandBuffer) {
                             SDL_Log("%s", SDL_GetError());
                             returnCode = 1;
@@ -540,24 +540,39 @@ int EditorApplication::run() {
                         }
 
                         if (swapchainTexture) {
-                            if (viewportFrame.has_value()) {
+                            if (viewportFrame.has_value() && viewportFrame->rfd.camera) {
 
-                                // draw scene
-                                if (!renderer->recordRenderPass(commandBuffer, viewportFrame->texture, viewportFrame->depthTexture, viewportFrame->widthInt, viewportFrame->heightInt, viewportFrame->rfd)) {
-                                    SDL_SubmitGPUCommandBuffer(commandBuffer);
-                                    returnCode = 1;
-                                    running = false;
-                                    break;
-                                }
+                                // create view
+                                engine::render::PerspectiveOptions perspective{};
+                                perspective.fov = viewportFrame->rfd.camera->verticalFovRadians;
+                                perspective.nearPlane = viewportFrame->rfd.camera->nearPlane;
+                                perspective.farPlane = viewportFrame->rfd.camera->farPlane;
+                                auto view = engine::render::View::create(viewportFrame->rfd.camera->viewMatrix, perspective, viewportFrame->widthInt, viewportFrame->heightInt);
 
-                                // draw global grid
-                                if (!_playSession) {
-                                    if (!grid->recordRenderPass(commandBuffer, viewportFrame->texture, viewportFrame->depthTexture, viewportFrame->widthInt, viewportFrame->heightInt, viewportFrame->rfd.camera.value())) {
+                                if (view) {
+                                    // draw scene
+                                    if (!renderer->recordRenderPass(commandBuffer, viewportFrame->texture, viewportFrame->depthTexture, viewportFrame->widthInt, viewportFrame->heightInt, viewportFrame->rfd, view.value())) {
                                         SDL_SubmitGPUCommandBuffer(commandBuffer);
                                         returnCode = 1;
                                         running = false;
                                         break;
                                     }
+
+                                    // draw global grid
+                                    if (!_playSession) {
+                                        if (!grid->recordRenderPass(commandBuffer, viewportFrame->texture, viewportFrame->depthTexture, viewportFrame->widthInt, viewportFrame->heightInt, viewportFrame->rfd.camera.value())) {
+                                            SDL_SubmitGPUCommandBuffer(commandBuffer);
+                                            returnCode = 1;
+                                            running = false;
+                                            break;
+                                        }
+                                    }
+                                } else {
+                                    SDL_Log("%s", view.error().c_str());
+                                    SDL_SubmitGPUCommandBuffer(commandBuffer);
+                                    returnCode = 1;
+                                    running = false;
+                                    break;
                                 }
                             }
                             ImGui_ImplSDLGPU3_PrepareDrawData(imDrawData, commandBuffer);
@@ -590,7 +605,7 @@ int EditorApplication::run() {
                         SDL_Delay(16);
                     }
 
-                    if (!SDL_WaitForGPUIdle(graphicsContext->device())) {
+                    if (!SDL_WaitForGPUIdle(renderContext->device())) {
                         SDL_Log("%s", SDL_GetError());
                         returnCode = 1;
                     }

@@ -4,7 +4,7 @@
 
 #include <sdl_support/public/validation.h>
 
-namespace engine::graphics {
+namespace engine::render {
 
 ColorTarget::ColorTarget(ColorTarget&& other) noexcept {
     _device = other._device;
@@ -123,4 +123,4 @@ void ColorTarget::release() {
     _format = {};
 }
 
-} // namespace engine::graphics
+} // namespace engine::render

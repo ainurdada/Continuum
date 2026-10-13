@@ -82,7 +82,7 @@ bool isCacheUpToDate(std::filesystem::path originFile, std::filesystem::path cac
     return false;
 }
 
-std::expected<void, std::string> writeMeshCache(std::filesystem::path cachePath, const std::vector<graphics::MeshData>& meshes) {
+std::expected<void, std::string> writeMeshCache(std::filesystem::path cachePath, const std::vector<render::MeshData>& meshes) {
     nlohmann::json json = nlohmann::json::object();
     json["formatVersion"] = 1;
 
@@ -106,19 +106,19 @@ std::expected<void, std::string> writeMeshCache(std::filesystem::path cachePath,
             descJson["offset"] = desc.offset;
 
             switch (desc.format) {
-            case engine::graphics::VertexAttributeFormat::Float:
+            case engine::render::VertexAttributeFormat::Float:
                 descJson["format"] = "Float";
                 break;
 
-            case engine::graphics::VertexAttributeFormat::Float2:
+            case engine::render::VertexAttributeFormat::Float2:
                 descJson["format"] = "Float2";
                 break;
 
-            case engine::graphics::VertexAttributeFormat::Float3:
+            case engine::render::VertexAttributeFormat::Float3:
                 descJson["format"] = "Float3";
                 break;
 
-            case engine::graphics::VertexAttributeFormat::Float4:
+            case engine::render::VertexAttributeFormat::Float4:
                 descJson["format"] = "Float4";
                 break;
             }
@@ -141,14 +141,14 @@ std::expected<void, std::string> writeMeshCache(std::filesystem::path cachePath,
     return writeJsonToCahceFile(cachePath, json);
 }
 
-const std::unordered_map<std::string, engine::graphics::VertexAttributeFormat> strToVertextFromat = {
-    {"Float", engine::graphics::VertexAttributeFormat::Float},
-    {"Float2", engine::graphics::VertexAttributeFormat::Float2},
-    {"Float3", engine::graphics::VertexAttributeFormat::Float3},
-    {"Float4", engine::graphics::VertexAttributeFormat::Float4},
+const std::unordered_map<std::string, engine::render::VertexAttributeFormat> strToVertextFromat = {
+    {"Float", engine::render::VertexAttributeFormat::Float},
+    {"Float2", engine::render::VertexAttributeFormat::Float2},
+    {"Float3", engine::render::VertexAttributeFormat::Float3},
+    {"Float4", engine::render::VertexAttributeFormat::Float4},
 };
 
-std::expected<std::vector<graphics::MeshData>, std::string> readMeshCache(std::filesystem::path cachePath) {
+std::expected<std::vector<render::MeshData>, std::string> readMeshCache(std::filesystem::path cachePath) {
     auto cacheJsonResult = getCachedJson(cachePath);
     if (!cacheJsonResult) {
         return std::unexpected(cacheJsonResult.error());
@@ -163,14 +163,14 @@ std::expected<std::vector<graphics::MeshData>, std::string> readMeshCache(std::f
         return std::unexpected("Missing meshes");
     }
 
-    std::vector<graphics::MeshData> result;
+    std::vector<render::MeshData> result;
 
     for (auto& [key, meshJson] : cacheJson.at("meshes").items()) {
         if (!meshJson.contains("vertexBytes") || !meshJson.at("vertexBytes").is_array()) {
             return std::unexpected("Missing vertexBytes");
         }
 
-        graphics::MeshData mesh{};
+        render::MeshData mesh{};
 
         for (auto& bytesJson : meshJson.at("vertexBytes").items()) {
             if (!bytesJson.value().is_number_unsigned()) {
@@ -194,7 +194,7 @@ std::expected<std::vector<graphics::MeshData>, std::string> readMeshCache(std::f
         }
 
         for (auto& [_, descJson] : meshJson.at("attributes").items()) {
-            engine::graphics::VertexAttributeDescription desc{};
+            engine::render::VertexAttributeDescription desc{};
 
             if (!descJson.contains("format") || !descJson.at("format").is_string()) {
                 return std::unexpected("Missing format");
@@ -235,7 +235,7 @@ std::expected<std::vector<graphics::MeshData>, std::string> readMeshCache(std::f
     return result;
 }
 
-std::expected<void, std::string> writeTextureCache(std::filesystem::path cachePath, const graphics::TextureData& texture) {
+std::expected<void, std::string> writeTextureCache(std::filesystem::path cachePath, const render::TextureData& texture) {
     nlohmann::json json = nlohmann::json::object();
     json["formatVersion"] = 1;
     json["width"] = texture.width;
@@ -251,7 +251,7 @@ std::expected<void, std::string> writeTextureCache(std::filesystem::path cachePa
     return writeJsonToCahceFile(cachePath, json);
 }
 
-std::expected<graphics::TextureData, std::string> readTextureCache(std::filesystem::path cachePath) {
+std::expected<render::TextureData, std::string> readTextureCache(std::filesystem::path cachePath) {
     auto cacheJsonResult = getCachedJson(cachePath);
     if (!cacheJsonResult) {
         return std::unexpected(cacheJsonResult.error());
@@ -266,7 +266,7 @@ std::expected<graphics::TextureData, std::string> readTextureCache(std::filesyst
         return std::unexpected("Not valid texture json");
     }
 
-    graphics::TextureData tex{};
+    render::TextureData tex{};
     tex.width = cacheJson.at("width").get<std::uint32_t>();
     tex.height = cacheJson.at("height").get<std::uint32_t>();
 

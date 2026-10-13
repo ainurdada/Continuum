@@ -1,10 +1,10 @@
 #include "shader.h"
 
-#include <sdl_support/public/validation.h>
 #include <graphics_platform.h>
+#include <sdl_support/public/validation.h>
 #include <string>
 
-namespace engine::graphics {
+namespace engine::render {
 
 inline SDL_GPUShaderStage translateShaderStageToSDL(ShaderStage shaderStage) {
     switch (shaderStage) {
@@ -105,4 +105,4 @@ void Shader::release() {
     }
 }
 
-} // namespace engine::graphics
+} // namespace engine::render

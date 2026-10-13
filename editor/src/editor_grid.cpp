@@ -16,8 +16,8 @@ struct TransformUniform {
     Mat4f model{};
 };
 
-engine::graphics::MeshData createGlobalGridMeshData(int halfCellCount, float spacingMeters) {
-    engine::graphics::MeshData grid{};
+engine::render::MeshData createGlobalGridMeshData(int halfCellCount, float spacingMeters) {
+    engine::render::MeshData grid{};
     std::vector<Vec3f> positionVertices{};
 
     for (int i = -halfCellCount; i <= halfCellCount; i++) {
@@ -32,28 +32,28 @@ engine::graphics::MeshData createGlobalGridMeshData(int halfCellCount, float spa
         grid.indices.push_back(currentIndex + 3);
     }
 
-    std::vector<engine::graphics::VertexAttributeDescription> descs = {
-        engine::graphics::VertexAttributeDescription{.location = 0, .format = engine::graphics::VertexAttributeFormat::Float3, .offset = 0},
+    std::vector<engine::render::VertexAttributeDescription> descs = {
+        engine::render::VertexAttributeDescription{.location = 0, .format = engine::render::VertexAttributeFormat::Float3, .offset = 0},
     };
 
-    grid.vertices = engine::graphics::makeVerticesData<Vec3f>(positionVertices, descs);
+    grid.vertices = engine::render::makeVerticesData<Vec3f>(positionVertices, descs);
     return grid;
 }
 
 } // namespace
 
-EditorGrid::EditorGrid(std::unique_ptr<engine::graphics::Mesh>& mesh, std::unique_ptr<engine::graphics::GraphicsPipeline>& pipeline) : _mesh(std::move(mesh)), _pipeline(std::move(pipeline)) {}
+EditorGrid::EditorGrid(std::unique_ptr<engine::render::Mesh>& mesh, std::unique_ptr<engine::render::GraphicsPipeline>& pipeline) : _mesh(std::move(mesh)), _pipeline(std::move(pipeline)) {}
 
 std::optional<EditorGrid> EditorGrid::create(SDL_GPUDevice* device, SDL_GPUTextureFormat colorTergetFormat) {
     // Load global grid
     auto grid = createGlobalGridMeshData(20, 1);
-    auto globalGridMesh = engine::graphics::Mesh::load(device, grid);
+    auto globalGridMesh = engine::render::Mesh::load(device, grid);
     if (!globalGridMesh) {
         return std::nullopt;
     }
 
     // create shaders
-    using namespace engine::graphics;
+    using namespace engine::render;
     ShaderLoadInfo vertexShaderInfo{};
     vertexShaderInfo.name = "default.vert";
     vertexShaderInfo.shaderStage = ShaderStage::Vertex;
@@ -66,7 +66,7 @@ std::optional<EditorGrid> EditorGrid::create(SDL_GPUDevice* device, SDL_GPUTextu
     gridFragmentShaderInfo.name = "grid.frag";
     gridFragmentShaderInfo.shaderStage = ShaderStage::Fragment;
     gridFragmentShaderInfo.numUniformBuffers = 0;
-    auto gridFragmentShader = engine::graphics::Shader::load(device, gridFragmentShaderInfo);
+    auto gridFragmentShader = engine::render::Shader::load(device, gridFragmentShaderInfo);
     if (!gridFragmentShader) {
         return std::nullopt;
     }
@@ -76,8 +76,8 @@ std::optional<EditorGrid> EditorGrid::create(SDL_GPUDevice* device, SDL_GPUTextu
     colorTargetDescription.format = colorTergetFormat;
     colorTargetDescription.blend_state = {};
 
-    // Create graphics pipeline
-    auto attributes = engine::graphics::convertVertexAttributeToSDL(grid.vertices.descs);
+    // Create render pipeline
+    auto attributes = engine::render::convertVertexAttributeToSDL(grid.vertices.descs);
     SDL_GPUVertexBufferDescription vertexBufferDescription{};
     vertexBufferDescription.slot = 0;
     vertexBufferDescription.pitch = grid.vertices.pitch;
@@ -103,7 +103,7 @@ std::optional<EditorGrid> EditorGrid::create(SDL_GPUDevice* device, SDL_GPUTextu
     graphicsPipelineCreateInfo.target_info.color_target_descriptions = &colorTargetDescription;
     graphicsPipelineCreateInfo.target_info.num_color_targets = 1;
     graphicsPipelineCreateInfo.target_info.has_depth_stencil_target = true;
-    graphicsPipelineCreateInfo.target_info.depth_stencil_format = engine::graphics::DepthTarget::format;
+    graphicsPipelineCreateInfo.target_info.depth_stencil_format = engine::render::DepthTarget::format;
     graphicsPipelineCreateInfo.props = 0;
 
     auto gridGraphicsPipeline = GraphicsPipeline::create(device, graphicsPipelineCreateInfo);
@@ -112,7 +112,7 @@ std::optional<EditorGrid> EditorGrid::create(SDL_GPUDevice* device, SDL_GPUTextu
     }
 
     auto pipeline = std::make_unique<GraphicsPipeline>(std::move(gridGraphicsPipeline.value()));
-    auto mesh = std::make_unique<engine::graphics::Mesh>(std::move(globalGridMesh.value()));
+    auto mesh = std::make_unique<engine::render::Mesh>(std::move(globalGridMesh.value()));
 
     return EditorGrid(mesh, pipeline);
 }

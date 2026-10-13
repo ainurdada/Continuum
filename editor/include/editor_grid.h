@@ -12,10 +12,10 @@
 namespace editor {
 
 class EditorGrid {
-    std::unique_ptr<engine::graphics::Mesh> _mesh = nullptr;
-    std::unique_ptr<engine::graphics::GraphicsPipeline> _pipeline = nullptr;
+    std::unique_ptr<engine::render::Mesh> _mesh = nullptr;
+    std::unique_ptr<engine::render::GraphicsPipeline> _pipeline = nullptr;
 
-    EditorGrid(std::unique_ptr<engine::graphics::Mesh>& mesh, std::unique_ptr<engine::graphics::GraphicsPipeline>& pipeline);
+    EditorGrid(std::unique_ptr<engine::render::Mesh>& mesh, std::unique_ptr<engine::render::GraphicsPipeline>& pipeline);
 
   public:
     static std::optional<EditorGrid> create(SDL_GPUDevice* device, SDL_GPUTextureFormat colorTergetFormat);

@@ -11,7 +11,7 @@
 
 namespace engine::asset::import {
 
-std::expected<std::vector<engine::graphics::MeshData>, std::string> loadMeshes(std::filesystem::path file) {
+std::expected<std::vector<engine::render::MeshData>, std::string> loadMeshes(std::filesystem::path file) {
     Assimp::Importer imp{};
     auto scene = imp.ReadFile(file.generic_string(), aiProcess_Triangulate | aiProcess_PreTransformVertices);
 
@@ -19,22 +19,22 @@ std::expected<std::vector<engine::graphics::MeshData>, std::string> loadMeshes(s
         return std::unexpected(imp.GetErrorString());
     }
 
-    std::vector<engine::graphics::MeshData> result;
+    std::vector<engine::render::MeshData> result;
     for (unsigned int i = 0; i < scene->mNumMeshes; i++) {
         auto mesh = *(scene->mMeshes + i);
 
-        engine::graphics::MeshData data;
+        engine::render::MeshData data;
 
         std::vector<Vec3f> positions{};
-        std::vector<engine::graphics::VertexAttributeDescription> descs = {
-            engine::graphics::VertexAttributeDescription{.location = 0, .format = engine::graphics::VertexAttributeFormat::Float3, .offset = 0},
+        std::vector<engine::render::VertexAttributeDescription> descs = {
+            engine::render::VertexAttributeDescription{.location = 0, .format = engine::render::VertexAttributeFormat::Float3, .offset = 0},
         };
         for (unsigned int j = 0; j < mesh->mNumVertices; j++) {
             auto vertex = mesh->mVertices + j;
             positions.push_back({vertex->x, vertex->y, vertex->z});
         }
 
-        data.vertices = engine::graphics::makeVerticesData<Vec3f>(positions, descs);
+        data.vertices = engine::render::makeVerticesData<Vec3f>(positions, descs);
 
         for (unsigned int j = 0; j < mesh->mNumFaces; j++) {
             auto face = mesh->mFaces + j;
@@ -52,7 +52,7 @@ std::expected<std::vector<engine::graphics::MeshData>, std::string> loadMeshes(s
     return result;
 }
 
-std::expected<engine::graphics::TextureData, std::string> loadTexture(std::filesystem::path file) {
+std::expected<engine::render::TextureData, std::string> loadTexture(std::filesystem::path file) {
     std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> surface(SDL_LoadPNG(file.generic_string().c_str()), &SDL_DestroySurface);
     if (!surface) {
         return std::unexpected(SDL_GetError());
@@ -63,7 +63,7 @@ std::expected<engine::graphics::TextureData, std::string> loadTexture(std::files
         return std::unexpected(SDL_GetError());
     }
 
-    engine::graphics::TextureData tex{};
+    engine::render::TextureData tex{};
     tex.width = converted->w;
     tex.height = converted->h;
     tex.bytes.reserve(tex.width * tex.height * 4);

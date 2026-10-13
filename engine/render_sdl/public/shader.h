@@ -4,7 +4,7 @@
 #include <memory>
 #include <optional>
 
-namespace engine::graphics {
+namespace engine::render {
 
 enum class ShaderStage {
     Vertex,
@@ -42,4 +42,4 @@ class Shader {
     void release();
 };
 
-} // namespace engine::graphics
+} // namespace engine::render

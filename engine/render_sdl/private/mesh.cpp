@@ -2,7 +2,7 @@
 
 #include <sdl_support/public/validation.h>
 
-namespace engine::graphics {
+namespace engine::render {
 
 Mesh::Mesh(Mesh&& other) noexcept {
     _device = other._device;
@@ -205,4 +205,4 @@ void Mesh::release() {
     _numIndices = 0;
 }
 
-} // namespace engine::graphics
+} // namespace engine::render

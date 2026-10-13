@@ -12,12 +12,12 @@
 namespace engine::asset {
 
 struct ModelLoadResult {
-    std::vector<graphics::MeshData> meshes;
+    std::vector<render::MeshData> meshes;
     std::optional<std::string> cacheWarning = std::nullopt;
 };
 
 struct TextureLoadResult {
-    graphics::TextureData texture;
+    render::TextureData texture;
     std::optional<std::string> cacheWarning = std::nullopt;
 };
 

@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 
-namespace engine::graphics {
+namespace engine::render {
 
 namespace {
 const std::unordered_map<VertexAttributeFormat, SDL_GPUVertexElementFormat> sdlFormats = {
@@ -29,4 +29,4 @@ std::vector<SDL_GPUVertexAttribute> convertVertexAttributeToSDL(const std::vecto
     return res;
 }
 
-} // namespace engine::graphics
+} // namespace engine::render
