@@ -1,12 +1,13 @@
 add_library(
     ContinuumEngine_Render
-    INTERFACE
+    STATIC
+    private/view.cpp
 )
 
-set_module_defaults(ContinuumEngine_Render INTERFACE)
+set_module_defaults(ContinuumEngine_Render STATIC)
 
 target_link_libraries(
     ContinuumEngine_Render
-    INTERFACE
+    PUBLIC
     ContinuumEngine_Math
 )
