@@ -147,7 +147,7 @@ bool EditorGrid::recordRenderPass(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUTe
     // Create color target
     SDL_GPUColorTargetInfo colorTargetInfo{};
     colorTargetInfo.texture = colorTarget;
-    colorTargetInfo.clear_color = SDL_FColor{0.00647, 0, 0.0858, 1};
+    colorTargetInfo.clear_color = SDL_FColor{0.1765f, 0.1882f, 0.2000f, 1.0f};
     colorTargetInfo.load_op = SDL_GPU_LOADOP_LOAD;
     colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
 
